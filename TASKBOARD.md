@@ -19,7 +19,7 @@
 | S-02 | M1 | 门禁与限速完善 | S-01 | done | 补 unlock 内存滑窗限速、成功后 cookie 直通、Path/HttpOnly/SameSite/Max-Age 断言、跨 id 不串；`npm test` 通过（60 tests）。 |
 | S-03 | M1 | REST 契约补齐 | S-02 | done | 补齐 PUT/DELETE/GET meta、统一错误码、413 体积上限、RETAIN_VERSIONS 滚动清理与软删不丢数据；`npm test` 通过（66 tests）。 |
 | S-05 | M1 | 服务端回归套件 | S-03, P-01 | done | 新增真实 server × selfhost adapter 端到端 publish→update→unlock→unpublish 回归；修复 adapter 循环导入；`npm test` 通过（67 tests）。 |
-| C-07 | M1 | publish CLI 编排 | C-03, C-04, P-01 | todo | |
+| C-07 | M1 | publish CLI 编排 | C-03, C-04, P-01 | done | 实现 `htmlshare publish` COLLECT→RECORD 编排、HTML 直传、enhanced 读入、缓存断点、stdout `URL/CODE` 契约与退出码；`npm test` 通过（71 tests）。 |
 | K-01 | M1 | SKILL.md v1 (Claude Code) | C-07 | todo | |
 | C-08 | M2 | 静态加密器 | C-04 | todo | |
 | C-09 | M2 | list / unpublish | C-07 | todo | |
