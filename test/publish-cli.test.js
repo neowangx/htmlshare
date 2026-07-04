@@ -107,6 +107,54 @@ test("publish html direct passes input through", async () => {
   assert.match(h.out(), /CODE: none\n$/);
 });
 
+test("publish without target uses P-04 resolver and remembers target", async () => {
+  const h = harness();
+  const adapter = mockAdapter();
+  const file = join(h.root, "note.md");
+  writeFileSync(file, "# Auto\n\n正文");
+
+  const code = await run(["publish", file, "--code", "4821"], {
+    configDir: h.configDir,
+    cacheDir: h.cacheDir,
+    config: {},
+    adapters: {
+      selfhost: { name: "selfhost", async detect() { return { available: false, reason: "missing" }; } },
+      vercel: adapter
+    },
+    stdout: h.stdout,
+    stderr: h.stderr
+  });
+
+  assert.equal(code, 0);
+  assert.match(h.err(), /TARGET: vercel 可用，已记住为默认目标/);
+  assert.match(readFileSync(join(h.configDir, "config.json"), "utf8"), /"defaultTarget": "vercel"/);
+  assert.match(h.out(), /URL: https:\/\/mock\/s\/abc234\//);
+});
+
+test("publish without available target exits 3 with first-use guide", async () => {
+  const h = harness();
+  const file = join(h.root, "note.md");
+  writeFileSync(file, "# None\n\n正文");
+
+  const code = await run(["publish", file], {
+    configDir: h.configDir,
+    cacheDir: h.cacheDir,
+    config: {},
+    adapters: {
+      selfhost: { name: "selfhost", async detect() { return { available: false, reason: "missing" }; } },
+      cloud: { name: "cloud", async detect() { return { available: false, reason: "missing" }; } },
+      vercel: { name: "vercel", async detect() { return { available: false, reason: "missing" }; } },
+      cloudflare: { name: "cloudflare", async detect() { return { available: false, reason: "missing" }; } }
+    },
+    stdout: h.stdout,
+    stderr: h.stderr
+  });
+
+  assert.equal(code, 3);
+  assert.match(h.err(), /还没有可用的发布目标/);
+  assert.match(h.err(), /npx vercel login/);
+});
+
 test("upload failure exits 4, keeps cache, and rerun skips convert", async () => {
   const h = harness();
   const file = join(h.root, "note.md");

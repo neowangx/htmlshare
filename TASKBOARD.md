@@ -25,7 +25,7 @@
 | C-09 | M2 | list / unpublish | C-07 | done | 实现 `list` 表格/JSON 与 `unpublish` 定位、确认、适配器调用、manifest 移除；修正 CLI flag 解析；`npm test` 通过（81 tests）。 |
 | P-02 | M2 | Vercel 适配器 | P-01, C-08 | done | 实现 Vercel 静态镜像目录、deploy/unpublish 与 `npx vercel` mock 验收；`npm test` 通过（85 tests）；人工项待验：H1 登录后真实发布/撤回联调。 |
 | P-03 | M2 | Cloudflare 适配器 | P-01, C-08 | done | 实现 Cloudflare Pages 静态镜像目录、deploy/unpublish 与 `npx wrangler` mock 验收；`npm test` 通过（89 tests）；人工项待验：H2 登录后真实发布/撤回联调。 |
-| P-04 | M2 | 目标探测与首配引导 | P-01, P-02, P-03 | todo | |
+| P-04 | M2 | 目标探测与首配引导 | P-01, P-02, P-03 | done | 实现 D7 目标自动探测 resolver、首次无目标三选一引导、自动记住 defaultTarget；覆盖 8 种探测矩阵与 CLI 集成；`npm test` 通过（95 tests）。 |
 | S-04 | M2 | Docker 部署脚本 | S-03 | todo | |
 | K-02 | M2 | install.sh 多 agent 安装 | K-01 | todo | |
 | K-03 | M2 | Codex 封装 | K-02 | todo | |

@@ -7,6 +7,7 @@ import { composePage } from "../compose.js";
 import { convertFile } from "../convert.js";
 import { getAdapter } from "../adapters/index.js";
 import { AdapterError } from "../adapters/errors.js";
+import { resolveTarget } from "../adapters/resolve.js";
 import { findEntry, loadManifest, remove, upsert } from "../lib/manifest.js";
 import { loadConfig } from "../lib/config.js";
 
@@ -84,12 +85,26 @@ async function publishCommand(file, flags, deps) {
 
   const configDir = deps.configDir;
   const config = deps.config || loadConfig(configDir);
-  const target = flags.target || config.defaultTarget || "selfhost";
-  const adapter = deps.adapters?.[target] || getAdapter(target);
-  const detected = await adapter.detect?.(config);
+  const resolved = await resolveTarget({
+    requestedTarget: flags.target,
+    config,
+    configDir,
+    adapters: deps.adapters,
+    remember: deps.rememberTarget !== false
+  });
+  if (!resolved.target) {
+    stderr.write(resolved.guide);
+    return 3;
+  }
+  const target = resolved.target;
+  const adapter = resolved.adapter || getAdapter(target);
+  const detected = flags.target ? await adapter.detect?.(config) : null;
   if (detected && detected.available === false) {
     stderr.write(`TARGET: ${detected.reason || "not available"}\n`);
     return 3;
+  }
+  if (resolved.remembered) {
+    stderr.write(`TARGET: ${target} 可用，已记住为默认目标。\n`);
   }
 
   const dir = join(deps.cacheDir || defaultCacheDir(), cacheKey(absPath));
