@@ -46,7 +46,7 @@
 | V-03 | M5 | 配额与用量 | V-02 | done | 在 `../htmlshare-cloud` 实现配额与用量（commit `ae32114`）：用户 token 发布归属、/api/me、free/pro env 限制、页数/体积拦截、删除释放配额、view usage_events；云仓 `npm test` 通过（21 tests）。 |
 | V-04 | M5 | 计划限制与回收（Q3 截止点） | V-03 | blocked | Q3 免费/付费额度数值未在 docs/00 确认；按截止点守卫冻结，不执行计划限制/回收策略固化；见 NEEDS_HUMAN H15。 |
 | V-05 | M5 | 用户控制台 | V-02 | done | 在 `../htmlshare-cloud` 实现最小用户控制台（commit `a17b340`）：邮箱验证码登录、页面列表、删除、重置访问码、owner 越权保护，服务端渲染无前端框架；云仓 `npm test` 通过（23 tests）。 |
-| P-05 | M5 | cloud 适配器 + login | P-01, V-02 | todo | |
+| P-05 | M5 | cloud 适配器 + login | P-01, V-02 | done | 实现开源 cloud 适配器与 `htmlshare login` 设备码轮询，发布复用 selfhost REST 契约，402/403 返回升级/清理提示，弱耦合断言保护核心层不引入 cloud；`npm test` 通过（114 tests）。 |
 | V-06 | M5 | 部署上线（Q1 截止点） | V-04, V-05 | todo | |
 | V-07 | M5 | 计费接入（Q2 截止点守卫） | V-06 | todo | |
 

@@ -7,6 +7,7 @@ import { composePage } from "../compose.js";
 import { convertFile } from "../convert.js";
 import { getAdapter } from "../adapters/index.js";
 import { AdapterError } from "../adapters/errors.js";
+import { loginCloud } from "../adapters/cloud.js";
 import { resolveTarget } from "../adapters/resolve.js";
 import { findEntry, loadManifest, remove, upsert } from "../lib/manifest.js";
 import { loadConfig, saveConfig } from "../lib/config.js";
@@ -270,7 +271,7 @@ export async function run(argv = process.argv.slice(2), deps = {}) {
   const stderr = deps.stderr || process.stderr;
   const parsed = parseArgs(argv);
   if (parsed.command === "--help" || parsed.command === "-h" || !parsed.command) {
-    stdout.write("htmlshare\n\nUsage:\n  htmlshare publish <file> [--target T] [--code C | --public] [--enhanced enhanced.json]\n  htmlshare list [--json]\n  htmlshare unpublish <file|id> [--yes]\n  htmlshare config [show|target|selfhost|defaults]\n");
+    stdout.write("htmlshare\n\nUsage:\n  htmlshare publish <file> [--target T] [--code C | --public] [--enhanced enhanced.json]\n  htmlshare login [--base-url URL]\n  htmlshare list [--json]\n  htmlshare unpublish <file|id> [--yes]\n  htmlshare config [show|target|selfhost|defaults]\n");
     return 0;
   }
   if (parsed.command === "--version" || parsed.command === "-v") {
@@ -292,6 +293,26 @@ export async function run(argv = process.argv.slice(2), deps = {}) {
 
   if (parsed.command === "config") {
     return configCommand(parsed, { ...deps, stdout, stderr });
+  }
+
+  if (parsed.command === "login") {
+    try {
+      await loginCloud({
+        baseUrl: parsed.flags["base-url"] || parsed.flags.baseUrl,
+        configDir: deps.configDir,
+        stdout,
+        stderr,
+        fetchFn: deps.fetchFn,
+        intervalMs: deps.loginIntervalMs
+      });
+      return 0;
+    } catch (error) {
+      if (error instanceof AdapterError) {
+        stderr.write(`LOGIN: ${error.code} ${error.message}\n`);
+        return error.code === "INVALID_INPUT" ? 2 : 4;
+      }
+      throw error;
+    }
   }
 
   if (parsed.command === "unpublish" && parsed.file) {

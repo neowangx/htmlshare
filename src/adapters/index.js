@@ -1,6 +1,7 @@
 import * as selfhost from "./selfhost.js";
 import * as vercel from "./vercel.js";
 import * as cloudflare from "./cloudflare.js";
+import * as cloud from "./cloud.js";
 import { AdapterError } from "./errors.js";
 
 const registry = new Map();
@@ -22,6 +23,7 @@ export function listAdapters() {
 }
 
 register(selfhost);
+register(cloud);
 register(vercel);
 register(cloudflare);
 
