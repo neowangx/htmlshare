@@ -4,7 +4,7 @@ import { signSession, parseCookies, verifySession } from "./lib/cookie.js";
 import { verifyCode } from "./lib/code.js";
 import { gatePage } from "./lib/pages.js";
 import { createUnlockLimiter } from "./lib/ratelimit.js";
-import { createPage, getLatestHtml, getMeta } from "./lib/store.js";
+import { createPage, deletePage, getLatestHtml, getMeta, updatePage } from "./lib/store.js";
 
 const COOKIE_TTL_SECONDS = 86400;
 
@@ -61,8 +61,9 @@ export function createServer(options = {}) {
   const token = options.token ?? process.env.UPLOAD_TOKEN;
   const publicBase = (options.publicBase || process.env.PUBLIC_BASE || "").replace(/\/+$/, "");
   const secret = options.secret || process.env.SESSION_SECRET || "htmlshare-dev-secret";
-  const maxPageBytes = Number(options.maxPageBytes || process.env.MAX_PAGE_MB || 20) * 1024 * 1024;
+  const maxPageBytes = options.maxPageBytes ?? (Number(process.env.MAX_PAGE_MB || 20) * 1024 * 1024);
   const unlockLimit = Number(options.unlockRateLimit || process.env.UNLOCK_RATE_LIMIT || 5);
+  const retainVersions = Number(options.retainVersions || process.env.RETAIN_VERSIONS || 20);
   const limiter = createUnlockLimiter({ max: unlockLimit, now: options.now });
 
   return http.createServer(async (req, res) => {
@@ -88,6 +89,43 @@ export function createServer(options = {}) {
           if (createError.code === "ID_CONFLICT") return error(res, 409, "ID_CONFLICT", "id 已存在");
           throw createError;
         }
+      }
+
+      const apiPageMatch = url.pathname.match(/^\/api\/pages\/([a-z0-9]{6})(?:\/meta)?$/);
+      if (apiPageMatch && !authorized(req, token)) return error(res, 401, "UNAUTHORIZED", "token 缺失或无效");
+
+      if (req.method === "PUT" && apiPageMatch && !url.pathname.endsWith("/meta")) {
+        let body;
+        try {
+          body = await readJson(req, maxPageBytes);
+        } catch (readError) {
+          if (readError.code === "TOO_LARGE") return error(res, 413, "TOO_LARGE", "页面体积超限");
+          return error(res, 400, "INVALID_INPUT", "请求体不是合法 JSON");
+        }
+        if (!body.html || typeof body.html !== "string") return error(res, 400, "INVALID_INPUT", "html 必填");
+        const meta = updatePage(dataDir, apiPageMatch[1], body, { retainVersions });
+        if (!meta) return error(res, 404, "NOT_FOUND", "id 不存在或已撤回");
+        return json(res, 200, { version: meta.version });
+      }
+
+      if (req.method === "DELETE" && apiPageMatch && !url.pathname.endsWith("/meta")) {
+        const meta = deletePage(dataDir, apiPageMatch[1]);
+        if (!meta) return error(res, 404, "NOT_FOUND", "id 不存在或已撤回");
+        res.writeHead(204);
+        return res.end();
+      }
+
+      if (req.method === "GET" && apiPageMatch && url.pathname.endsWith("/meta")) {
+        const meta = getMeta(dataDir, apiPageMatch[1]);
+        if (!meta || meta.deletedAt) return error(res, 404, "NOT_FOUND", "id 不存在或已撤回");
+        return json(res, 200, {
+          id: meta.id,
+          title: meta.title,
+          version: meta.version,
+          createdAt: meta.createdAt,
+          updatedAt: meta.updatedAt,
+          hasCode: Boolean(meta.codeHash)
+        });
       }
 
       const pageMatch = url.pathname.match(/^\/s\/([a-z0-9]{6})\/?$/);

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
 
@@ -43,6 +43,22 @@ export function getLatestHtml(dataDir, id) {
   return readFileSync(versionPath(dataDir, id, meta.version), "utf8");
 }
 
+function writeVersion(dataDir, id, version, html) {
+  writeFileSync(versionPath(dataDir, id, version), html);
+  return { n: version, at: new Date().toISOString(), bytes: Buffer.byteLength(html) };
+}
+
+function pruneVersions(dataDir, meta, retainVersions = 20) {
+  while (meta.versions.length > retainVersions) {
+    const [removed] = meta.versions.splice(0, 1);
+    try {
+      unlinkSync(versionPath(dataDir, meta.id, removed.n));
+    } catch {
+      // Best-effort cleanup; metadata remains the source of truth.
+    }
+  }
+}
+
 export function createPage(dataDir, { id = null, title = "Untitled", html, code = null, meta = {} }) {
   const pageId = id || newId();
   if (existsSync(metaPath(dataDir, pageId))) {
@@ -53,7 +69,7 @@ export function createPage(dataDir, { id = null, title = "Untitled", html, code 
 
   const now = new Date().toISOString();
   mkdirSync(pageDir(dataDir, pageId), { recursive: true });
-  writeFileSync(versionPath(dataDir, pageId, 1), html);
+  const firstVersion = writeVersion(dataDir, pageId, 1, html);
   return writeMeta(dataDir, {
     id: pageId,
     title,
@@ -63,6 +79,31 @@ export function createPage(dataDir, { id = null, title = "Untitled", html, code 
     deletedAt: null,
     version: 1,
     meta,
-    versions: [{ n: 1, at: now, bytes: Buffer.byteLength(html) }]
+    versions: [{ ...firstVersion, at: now }]
   });
+}
+
+export function updatePage(dataDir, id, { title, html, code, meta = {} }, { retainVersions = 20 } = {}) {
+  const existing = getMeta(dataDir, id);
+  if (!existing || existing.deletedAt) return null;
+  const nextVersion = existing.version + 1;
+  const version = writeVersion(dataDir, id, nextVersion, html);
+  existing.version = nextVersion;
+  existing.title = title ?? existing.title;
+  existing.meta = { ...(existing.meta || {}), ...meta };
+  if (Object.hasOwn({ code }, "code") && code !== undefined) {
+    existing.codeHash = code ? hashCode(code) : null;
+  }
+  existing.updatedAt = version.at;
+  existing.versions.push(version);
+  pruneVersions(dataDir, existing, retainVersions);
+  return writeMeta(dataDir, existing);
+}
+
+export function deletePage(dataDir, id, { now = new Date().toISOString() } = {}) {
+  const existing = getMeta(dataDir, id);
+  if (!existing || existing.deletedAt) return null;
+  existing.deletedAt = now;
+  existing.updatedAt = now;
+  return writeMeta(dataDir, existing);
 }
