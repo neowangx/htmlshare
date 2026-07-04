@@ -3,6 +3,7 @@ import http from "node:http";
 import { signSession, parseCookies, verifySession } from "./lib/cookie.js";
 import { verifyCode } from "./lib/code.js";
 import { gatePage } from "./lib/pages.js";
+import { createUnlockLimiter } from "./lib/ratelimit.js";
 import { createPage, getLatestHtml, getMeta } from "./lib/store.js";
 
 const COOKIE_TTL_SECONDS = 86400;
@@ -61,6 +62,8 @@ export function createServer(options = {}) {
   const publicBase = (options.publicBase || process.env.PUBLIC_BASE || "").replace(/\/+$/, "");
   const secret = options.secret || process.env.SESSION_SECRET || "htmlshare-dev-secret";
   const maxPageBytes = Number(options.maxPageBytes || process.env.MAX_PAGE_MB || 20) * 1024 * 1024;
+  const unlockLimit = Number(options.unlockRateLimit || process.env.UNLOCK_RATE_LIMIT || 5);
+  const limiter = createUnlockLimiter({ max: unlockLimit, now: options.now });
 
   return http.createServer(async (req, res) => {
     try {
@@ -103,8 +106,15 @@ export function createServer(options = {}) {
         const id = unlockMatch[1];
         const meta = getMeta(dataDir, id);
         if (!meta || meta.deletedAt) return error(res, 404, "NOT_FOUND", "id 不存在或已撤回");
+        const limitKey = `${req.socket.remoteAddress || "unknown"}:${id}`;
+        const gate = limiter.check(limitKey);
+        if (!gate.allowed) return error(res, 429, "RATE_LIMITED", "解锁尝试过频");
         const code = await readUnlockCode(req);
-        if (!verifyCode(code, meta.codeHash)) return error(res, 403, "INVALID_INPUT", "访问码不正确");
+        if (!verifyCode(code, meta.codeHash)) {
+          limiter.fail(limitKey);
+          return error(res, 403, "INVALID_INPUT", "访问码不正确");
+        }
+        limiter.reset(limitKey);
         const session = signSession(secret, { id, exp: Date.now() + COOKIE_TTL_SECONDS * 1000 });
         return html(res, 200, getLatestHtml(dataDir, id), {
           "set-cookie": `hs_${id}=${encodeURIComponent(session)}; Path=/s/${id}; HttpOnly; SameSite=Strict; Max-Age=${COOKIE_TTL_SECONDS}`
