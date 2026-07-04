@@ -28,7 +28,7 @@
 | P-04 | M2 | 目标探测与首配引导 | P-01, P-02, P-03 | done | 实现 D7 目标自动探测 resolver、首次无目标三选一引导、自动记住 defaultTarget；覆盖 8 种探测矩阵与 CLI 集成；`npm test` 通过（95 tests）。 |
 | S-04 | M2 | Docker 部署脚本 | S-03 | done | 增加多阶段非 root Dockerfile、持久卷部署脚本与结构测试；`docker build` 成功、容器 `/healthz` 冒烟通过、shellcheck 通过、`npm test` 通过（97 tests）；人工项待验：H3 真机部署。 |
 | K-02 | M2 | install.sh 多 agent 安装 | K-01 | done | 实现一行安装器：clone/update 到 `~/.htmlshare`、`npm install --omit=dev`、安装 CLI symlink、Claude skill symlink，并为 Codex/OpenClaw/Hermes 留占位探测；干净 HOME 沙箱跑两遍幂等、shellcheck 通过、`npm test` 通过（99 tests）。 |
-| K-03 | M2 | Codex 封装 | K-02 | todo | |
+| K-03 | M2 | Codex 封装 | K-02 | done | 基于本机 codex-cli 0.142.5 与 `~/.codex/AGENTS.md` 约定生成 Codex 封装；安装器支持 marker 幂等注入；生成物与 SKILL.md 关键指令逐段对应；shellcheck 通过、`npm test` 通过（101 tests）；人工项待验：H4 Codex 真实发布。 |
 | K-04 | M2 | OpenClaw/Hermes 封装 | K-02 | todo | |
 | C-10 | M3 | 模板 meeting | C-05, U-03 | todo | |
 | C-11 | M3 | 模板 proposal | C-05, U-03 | todo | |

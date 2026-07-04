@@ -14,7 +14,7 @@ function runInstall(home) {
     env: {
       ...process.env,
       HOME: home,
-      HTMLSHARE_REPO_URL: `file://${repoRoot}`,
+      HTMLSHARE_SOURCE_DIR: repoRoot,
       HTMLSHARE_BIN_DIR: join(home, ".local", "bin")
     }
   });
@@ -48,8 +48,9 @@ test("K-02 install.sh is idempotent in a clean HOME sandbox", () => {
   assert.equal(lstatSync(bin).isSymbolicLink(), true);
   assert.equal(readlinkSync(bin), join(installDir, "bin", "htmlshare.js"));
   assert.match(first, /Installed Claude Code skill/);
-  assert.match(first, /Detected Codex/);
+  assert.match(first, /Installed Codex wrapper/);
   assert.match(first, /Detected OpenClaw/);
   assert.match(first, /Detected Hermes/);
-  assert.match(second, /Updating htmlshare/);
+  assert.match(second, /Installing htmlshare from local source/);
+  assert.equal((execFileSync("grep", ["-c", "htmlshare:start", join(home, ".codex", "AGENTS.md")], { encoding: "utf8" }).trim()), "1");
 });
