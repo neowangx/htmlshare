@@ -41,6 +41,8 @@ test("K-02 install.sh is idempotent in a clean HOME sandbox", () => {
   const installDir = join(home, ".htmlshare");
   const claudeSkill = join(home, ".claude", "skills", "htmlshare");
   const bin = join(home, ".local", "bin", "htmlshare");
+  const openclawSkill = join(home, ".openclaw", "skills", "htmlshare");
+  const hermesSkill = join(home, ".hermes", "skills", "htmlshare");
 
   assert.equal(existsSync(join(installDir, "SKILL.md")), true);
   assert.equal(lstatSync(claudeSkill).isSymbolicLink(), true);
@@ -49,8 +51,10 @@ test("K-02 install.sh is idempotent in a clean HOME sandbox", () => {
   assert.equal(readlinkSync(bin), join(installDir, "bin", "htmlshare.js"));
   assert.match(first, /Installed Claude Code skill/);
   assert.match(first, /Installed Codex wrapper/);
-  assert.match(first, /Detected OpenClaw/);
-  assert.match(first, /Detected Hermes/);
+  assert.match(first, /Installed OpenClaw skill/);
+  assert.match(first, /Installed Hermes skill/);
   assert.match(second, /Installing htmlshare from local source/);
   assert.equal((execFileSync("grep", ["-c", "htmlshare:start", join(home, ".codex", "AGENTS.md")], { encoding: "utf8" }).trim()), "1");
+  assert.equal(readlinkSync(openclawSkill), join(installDir, "agents", "openclaw"));
+  assert.equal(readlinkSync(hermesSkill), join(installDir, "agents", "hermes"));
 });

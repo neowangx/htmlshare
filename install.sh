@@ -77,13 +77,17 @@ install_codex_placeholder() {
 
 install_openclaw_placeholder() {
   if [ -d "$HOME/.openclaw" ]; then
-    log "Detected OpenClaw; wrapper install will be enabled by K-04."
+    mkdir -p "$HOME/.openclaw/skills"
+    ln -sfn "$INSTALL_DIR/agents/openclaw" "$HOME/.openclaw/skills/$SKILL_NAME"
+    log "Installed OpenClaw skill: $HOME/.openclaw/skills/$SKILL_NAME -> $INSTALL_DIR/agents/openclaw"
   fi
 }
 
 install_hermes_placeholder() {
   if [ -d "$HOME/.hermes" ]; then
-    log "Detected Hermes; wrapper install will be enabled by K-04."
+    mkdir -p "$HOME/.hermes/skills"
+    ln -sfn "$INSTALL_DIR/agents/hermes" "$HOME/.hermes/skills/$SKILL_NAME"
+    log "Installed Hermes skill: $HOME/.hermes/skills/$SKILL_NAME -> $INSTALL_DIR/agents/hermes"
   fi
 }
 

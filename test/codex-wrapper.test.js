@@ -26,10 +26,34 @@ test("K-03 Codex wrapper is generated from SKILL.md key sections", () => {
   assert.match(codex, /~\/\.codex\/AGENTS\.md/);
 });
 
-test("K-03 Codex wrapper generation is idempotent", () => {
+test("K-04 Hermes and OpenClaw wrappers are generated from SKILL.md key sections", () => {
+  const skill = readFileSync(join(repoRoot, "SKILL.md"), "utf8");
+  for (const [agent, basis] of [["hermes", "Hermes Agent v0.18.0"], ["openclaw", "~/.openclaw/skills"]]) {
+    const wrapper = readFileSync(join(repoRoot, "agents", agent, "SKILL.md"), "utf8");
+    assert.match(wrapper, /^---\nname: htmlshare/m);
+    assert.match(wrapper, new RegExp(basis.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    for (const phrase of [
+      "htmlshare publish <file.md> --enhanced <enhanced.json>",
+      "Never change facts",
+      "URL: <url>",
+      "CODE: <code|none>"
+    ]) {
+      assert.match(skill, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+      assert.match(wrapper, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    }
+  }
+});
+
+test("K-03/K-04 wrapper generation is idempotent", () => {
   const before = readFileSync(join(repoRoot, "agents", "codex", "AGENTS.md"), "utf8");
+  const beforeHermes = readFileSync(join(repoRoot, "agents", "hermes", "SKILL.md"), "utf8");
+  const beforeOpenClaw = readFileSync(join(repoRoot, "agents", "openclaw", "SKILL.md"), "utf8");
   execFileSync(process.execPath, [join(repoRoot, "scripts", "generate-agent-wrappers.js")], { cwd: repoRoot });
   const after = readFileSync(join(repoRoot, "agents", "codex", "AGENTS.md"), "utf8");
+  const afterHermes = readFileSync(join(repoRoot, "agents", "hermes", "SKILL.md"), "utf8");
+  const afterOpenClaw = readFileSync(join(repoRoot, "agents", "openclaw", "SKILL.md"), "utf8");
 
   assert.equal(after, before);
+  assert.equal(afterHermes, beforeHermes);
+  assert.equal(afterOpenClaw, beforeOpenClaw);
 });
