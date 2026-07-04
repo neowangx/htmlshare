@@ -6,7 +6,7 @@
 | 卡号 | 里程碑 | 任务 | 依赖 | 状态 | 完成说明 |
 |------|--------|------|------|------|---------|
 | C-01 | M0 | 仓库脚手架 | — | done | 建立 Node>=20 零构建脚手架；`npm install && npm test` 通过（3 tests）；git 初始化完成。 |
-| C-02 | M0 | 忠实转换器移植 | C-01 | todo | |
+| C-02 | M0 | 忠实转换器移植 | C-01 | done | 移植转换与净化模块，导出 `convertFaithful(md) -> { html, title, headings }`；`npm test` 通过（17 tests）。 |
 | C-03 | M0 | config/manifest 模块 | C-01 | todo | |
 | C-04 | M1 | 双模式组装器 compose | C-02 | todo | |
 | U-01 | M1 | 设计方向样张（4 风格比选） | — | todo | |
