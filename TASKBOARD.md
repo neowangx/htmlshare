@@ -42,7 +42,7 @@
 | G-03 | M4 | examples 一键体验 | G-01 | todo | |
 | G-04 | M4 | v0.1.0 发布 | G-01, G-02, G-03 | todo | |
 | V-01 | M5 | 私有仓初始化 + 多租户模型 | S-03 | done | 初始化兄弟私有仓 `../htmlshare-cloud`（git commit `05d9202`），复制开源 server 契约测试原样通过，新增 better-sqlite3 索引层 users/pages/versions/usage_events 与文件系统一致性断言；云仓 `npm test` 通过（15 tests）。 |
-| V-02 | M5 | 设备码登录 | V-01 | todo | |
+| V-02 | M5 | 设备码登录 | V-01 | done | 在 `../htmlshare-cloud` 实现设备码登录（commit `a00ab2c`）：/api/auth/device、/api/auth/token、/activate 邮箱验证码 outbox、一次性 token 与 token_hash 存储，上传端点接受用户 Bearer；云仓 `npm test` 通过（18 tests）。 |
 | V-03 | M5 | 配额与用量 | V-02 | todo | |
 | V-04 | M5 | 计划限制与回收（Q3 截止点） | V-03 | todo | |
 | V-05 | M5 | 用户控制台 | V-02 | todo | |
