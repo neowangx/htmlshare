@@ -9,11 +9,16 @@ import { getAdapter } from "../adapters/index.js";
 import { AdapterError } from "../adapters/errors.js";
 import { resolveTarget } from "../adapters/resolve.js";
 import { findEntry, loadManifest, remove, upsert } from "../lib/manifest.js";
-import { loadConfig } from "../lib/config.js";
+import { loadConfig, saveConfig } from "../lib/config.js";
+
+const TARGETS = new Set(["selfhost", "cloud", "vercel", "cloudflare"]);
+const TEMPLATES = new Set(["auto", "generic", "meeting", "proposal", "tutorial", "release"]);
+const STYLES = new Set(["auto", "clinical", "minimal", "editorial", "darktech"]);
 
 function parseArgs(argv) {
   const [command, ...rest] = argv;
   let file = null;
+  const positionals = [];
   const flags = {};
   for (let index = 0; index < rest.length; index += 1) {
     const arg = rest[index];
@@ -24,9 +29,12 @@ function parseArgs(argv) {
       index += 1;
     } else if (!file) {
       file = arg;
+      positionals.push(arg);
+    } else {
+      positionals.push(arg);
     }
   }
-  return { command, file, flags };
+  return { command, file, flags, positionals };
 }
 
 function defaultCacheDir() {
@@ -51,7 +59,7 @@ function chooseCode(flags, config) {
   return randomCode();
 }
 
-function htmlFromInput(absPath, flags, stderr) {
+function htmlFromInput(absPath, flags, stderr, config) {
   if (extname(absPath).toLowerCase() === ".html") {
     stderr.write("COLLECT: html direct\n");
     return { html: readFileSync(absPath, "utf8"), title: basename(absPath, ".html"), directHtml: true };
@@ -64,13 +72,104 @@ function htmlFromInput(absPath, flags, stderr) {
     title: flags.title || faithful.title,
     faithfulHtml: faithful.html,
     enhanced,
-    footerBadge: configFooter(flags)
+    footerBadge: configFooter(config)
   });
   return { html: page.html, title: flags.title || faithful.title, directHtml: false };
 }
 
-function configFooter() {
-  return true;
+function configFooter(config) {
+  return config.footerBadge !== false;
+}
+
+function redactToken(token) {
+  if (!token) return null;
+  const value = String(token);
+  return `***${value.slice(-4)}`;
+}
+
+function publicConfig(config) {
+  return {
+    ...config,
+    selfhost: config.selfhost ? { ...config.selfhost, uploadToken: redactToken(config.selfhost.uploadToken) } : undefined,
+    cloud: config.cloud ? { ...config.cloud, token: redactToken(config.cloud.token) } : undefined
+  };
+}
+
+function saveAndReport(config, configDir, stdout) {
+  saveConfig(config, configDir);
+  stdout.write("CONFIG: saved\n");
+  return 0;
+}
+
+async function promptValue(deps, label) {
+  const stdin = deps.stdin || process.stdin;
+  const stdout = deps.stdout || process.stdout;
+  if (!stdin.isTTY) return null;
+  const readline = await import("node:readline/promises");
+  const rl = readline.createInterface({ input: stdin, output: stdout });
+  try {
+    return await rl.question(`${label}: `);
+  } finally {
+    rl.close();
+  }
+}
+
+async function configCommand(parsed, deps) {
+  const stdout = deps.stdout;
+  const stderr = deps.stderr;
+  const configDir = deps.configDir;
+  const config = deps.config || loadConfig(configDir);
+  const [subcommand, key, value] = parsed.positionals;
+
+  if (!subcommand || subcommand === "show") {
+    stdout.write(`${JSON.stringify(publicConfig(config), null, 2)}\n`);
+    return 0;
+  }
+
+  if (subcommand === "target") {
+    if (!TARGETS.has(key)) {
+      stderr.write("CONFIG: target must be one of selfhost|cloud|vercel|cloudflare\n");
+      return 2;
+    }
+    return saveAndReport({ ...config, defaultTarget: key }, configDir, stdout);
+  }
+
+  if (subcommand === "selfhost") {
+    const baseUrl = parsed.flags["base-url"] || parsed.flags.baseUrl || await promptValue(deps, "selfhost baseUrl");
+    const uploadToken = parsed.flags.token || await promptValue(deps, "selfhost uploadToken");
+    if (!baseUrl || !uploadToken) {
+      stderr.write("CONFIG: selfhost requires --base-url and --token in non-interactive mode\n");
+      return 2;
+    }
+    return saveAndReport({
+      ...config,
+      defaultTarget: config.defaultTarget || "selfhost",
+      selfhost: { baseUrl: String(baseUrl).replace(/\/+$/, ""), uploadToken: String(uploadToken) }
+    }, configDir, stdout);
+  }
+
+  if (subcommand === "defaults") {
+    if (!key) {
+      stdout.write(`${JSON.stringify(config.defaults || {}, null, 2)}\n`);
+      return 0;
+    }
+    if (!["template", "style", "code"].includes(key) || value === undefined) {
+      stderr.write("CONFIG: defaults usage: htmlshare config defaults <template|style|code> <value>\n");
+      return 2;
+    }
+    if (key === "template" && !TEMPLATES.has(value)) {
+      stderr.write("CONFIG: template must be auto|generic|meeting|proposal|tutorial|release\n");
+      return 2;
+    }
+    if (key === "style" && !STYLES.has(value)) {
+      stderr.write("CONFIG: style must be auto|clinical|minimal|editorial|darktech\n");
+      return 2;
+    }
+    return saveAndReport({ ...config, defaults: { ...(config.defaults || {}), [key]: value } }, configDir, stdout);
+  }
+
+  stderr.write("CONFIG: unknown subcommand\n");
+  return 2;
 }
 
 async function publishCommand(file, flags, deps) {
@@ -119,7 +218,7 @@ async function publishCommand(file, flags, deps) {
     html = readFileSync(artifactPath, "utf8");
     title = flags.title || basename(absPath, extname(absPath));
   } else {
-    const rendered = htmlFromInput(absPath, flags, stderr);
+    const rendered = htmlFromInput(absPath, flags, stderr, config);
     html = rendered.html;
     title = flags.title || rendered.title;
     writeFileSync(artifactPath, html);
@@ -149,8 +248,8 @@ async function publishCommand(file, flags, deps) {
       url: result.url,
       code,
       title,
-      template: flags.template || "generic",
-      style: flags.style || "clinical",
+      template: flags.template || config.defaults?.template || "generic",
+      style: flags.style || config.defaults?.style || "clinical",
       createdAt: existing?.createdAt || now,
       updatedAt: now
     }, configDir);
@@ -171,7 +270,7 @@ export async function run(argv = process.argv.slice(2), deps = {}) {
   const stderr = deps.stderr || process.stderr;
   const parsed = parseArgs(argv);
   if (parsed.command === "--help" || parsed.command === "-h" || !parsed.command) {
-    stdout.write("htmlshare\n\nUsage:\n  htmlshare publish <file> [--target T] [--code C | --public] [--enhanced enhanced.json]\n  htmlshare list [--json]\n  htmlshare unpublish <file|id> [--yes]\n");
+    stdout.write("htmlshare\n\nUsage:\n  htmlshare publish <file> [--target T] [--code C | --public] [--enhanced enhanced.json]\n  htmlshare list [--json]\n  htmlshare unpublish <file|id> [--yes]\n  htmlshare config [show|target|selfhost|defaults]\n");
     return 0;
   }
   if (parsed.command === "--version" || parsed.command === "-v") {
@@ -189,6 +288,10 @@ export async function run(argv = process.argv.slice(2), deps = {}) {
       }
     }
     return 0;
+  }
+
+  if (parsed.command === "config") {
+    return configCommand(parsed, { ...deps, stdout, stderr });
   }
 
   if (parsed.command === "unpublish" && parsed.file) {

@@ -35,7 +35,7 @@
 | C-12 | M3 | 模板 tutorial | C-05, U-03 | todo | |
 | C-13 | M3 | 模板 release | C-05, U-03 | todo | |
 | C-14 | M3 | 风格 editorial + darktech | C-06, U-03 | todo | |
-| C-15 | M3 | 高级设置 config | C-07 | todo | |
+| C-15 | M3 | 高级设置 config | C-07 | done | 实现 `config show/target/selfhost/defaults`，show 脱敏 token 后 4 位；publish 读取 defaults 与 footerBadge；覆盖设置写入、脱敏、默认模板/风格/访问码生效；`npm test` 通过（106 tests）。 |
 | K-05 | M3 | SKILL.md 完整增强规则 | K-01, C-10~C-14 | todo | |
 | G-02 | M4 | GitHub 仓库与 CI（CI 可 M1 后早启） | C-01; Q4 | todo | |
 | G-01 | M4 | README 与文档 | K-05 | todo | |
