@@ -1,14 +1,5 @@
 import * as selfhost from "./selfhost.js";
-
-export class AdapterError extends Error {
-  constructor(code, message, options = {}) {
-    super(message || code);
-    this.name = "AdapterError";
-    this.code = code;
-    this.status = options.status;
-    this.cause = options.cause;
-  }
-}
+import { AdapterError } from "./errors.js";
 
 const registry = new Map();
 
@@ -29,3 +20,5 @@ export function listAdapters() {
 }
 
 register(selfhost);
+
+export { AdapterError };

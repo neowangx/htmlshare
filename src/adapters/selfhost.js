@@ -1,5 +1,5 @@
 import { loadConfig } from "../lib/config.js";
-import { AdapterError } from "./index.js";
+import { AdapterError } from "./errors.js";
 
 export const name = "selfhost";
 
