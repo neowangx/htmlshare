@@ -7,19 +7,22 @@ import { composePage } from "../compose.js";
 import { convertFile } from "../convert.js";
 import { getAdapter } from "../adapters/index.js";
 import { AdapterError } from "../adapters/errors.js";
-import { findEntry, upsert } from "../lib/manifest.js";
+import { findEntry, loadManifest, remove, upsert } from "../lib/manifest.js";
 import { loadConfig } from "../lib/config.js";
 
 function parseArgs(argv) {
-  const [command, file, ...rest] = argv;
+  const [command, ...rest] = argv;
+  let file = null;
   const flags = {};
   for (let index = 0; index < rest.length; index += 1) {
     const arg = rest[index];
-    if (arg === "--public" || arg === "--force") {
+    if (arg === "--public" || arg === "--force" || arg === "--json" || arg === "--yes") {
       flags[arg.slice(2)] = true;
     } else if (arg.startsWith("--")) {
       flags[arg.slice(2)] = rest[index + 1];
       index += 1;
+    } else if (!file) {
+      file = arg;
     }
   }
   return { command, file, flags };
@@ -153,13 +156,57 @@ export async function run(argv = process.argv.slice(2), deps = {}) {
   const stderr = deps.stderr || process.stderr;
   const parsed = parseArgs(argv);
   if (parsed.command === "--help" || parsed.command === "-h" || !parsed.command) {
-    stdout.write("htmlshare\n\nUsage:\n  htmlshare publish <file> [--target T] [--code C | --public] [--enhanced enhanced.json]\n");
+    stdout.write("htmlshare\n\nUsage:\n  htmlshare publish <file> [--target T] [--code C | --public] [--enhanced enhanced.json]\n  htmlshare list [--json]\n  htmlshare unpublish <file|id> [--yes]\n");
     return 0;
   }
   if (parsed.command === "--version" || parsed.command === "-v") {
     stdout.write("htmlshare 0.0.0\n");
     return 0;
   }
+  if (parsed.command === "list") {
+    const manifest = loadManifest(deps.configDir);
+    if (parsed.flags.json) {
+      stdout.write(`${JSON.stringify(manifest.entries, null, 2)}\n`);
+    } else {
+      stdout.write("title\ttarget\turl\tupdatedAt\tcode\n");
+      for (const entry of manifest.entries) {
+        stdout.write(`${entry.title || ""}\t${entry.target}\t${entry.url}\t${entry.updatedAt || ""}\t${entry.code || "none"}\n`);
+      }
+    }
+    return 0;
+  }
+
+  if (parsed.command === "unpublish" && parsed.file) {
+    const manifest = loadManifest(deps.configDir);
+    const config = deps.config || loadConfig(deps.configDir);
+    const target = parsed.flags.target || config.defaultTarget;
+    const maybePath = isAbsolute(parsed.file) ? parsed.file : resolve(deps.cwd || process.cwd(), parsed.file);
+    const entry = manifest.entries.find((item) => item.id === parsed.file && (!target || item.target === target))
+      || manifest.entries.find((item) => item.source === maybePath && (!target || item.target === target));
+    if (!entry) {
+      stderr.write("UNPUBLISH: entry not found\n");
+      return 2;
+    }
+    const stdin = deps.stdin || process.stdin;
+    if (!parsed.flags.yes && !stdin.isTTY) {
+      stderr.write(`撤回 ${entry.url} 需要确认；脚本环境请加 --yes。各目标生效时间可能从数秒到数分钟不等。\n`);
+      return 5;
+    }
+    const adapter = deps.adapters?.[entry.target] || getAdapter(entry.target);
+    try {
+      await adapter.unpublish({ id: entry.id, config });
+      remove(entry.source, entry.target, deps.configDir);
+      stdout.write(`UNPUBLISHED: ${entry.id}\n`);
+      return 0;
+    } catch (error) {
+      if (error instanceof AdapterError) {
+        stderr.write(`UNPUBLISH: ${error.code} ${error.message}\n`);
+        return 4;
+      }
+      throw error;
+    }
+  }
+
   if (parsed.command !== "publish" || !parsed.file) {
     stderr.write("Usage: htmlshare publish <file>\n");
     return 2;

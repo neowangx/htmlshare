@@ -22,7 +22,7 @@
 | C-07 | M1 | publish CLI 编排 | C-03, C-04, P-01 | done | 实现 `htmlshare publish` COLLECT→RECORD 编排、HTML 直传、enhanced 读入、缓存断点、stdout `URL/CODE` 契约与退出码；`npm test` 通过（71 tests）。 |
 | K-01 | M1 | SKILL.md v1 (Claude Code) | C-07 | done | 编写 Claude Code 主源 `SKILL.md`，含触发语料、宿主 agent 增强流程、60s 兜底、输出话术；结构/help 断言通过；`npm test` 通过（73 tests），人工项待验：Claude Code 实测话术体验。 |
 | C-08 | M2 | 静态加密器 | C-04 | done | 实现 gzip+PBKDF2-SHA256(600k)+AES-256-GCM 静态加密壳、8 位 Crockford 访问码、WebCrypto 解密 UI；`npm test` 通过（78 tests）。 |
-| C-09 | M2 | list / unpublish | C-07 | todo | |
+| C-09 | M2 | list / unpublish | C-07 | done | 实现 `list` 表格/JSON 与 `unpublish` 定位、确认、适配器调用、manifest 移除；修正 CLI flag 解析；`npm test` 通过（81 tests）。 |
 | P-02 | M2 | Vercel 适配器 | P-01, C-08 | todo | |
 | P-03 | M2 | Cloudflare 适配器 | P-01, C-08 | todo | |
 | P-04 | M2 | 目标探测与首配引导 | P-01, P-02, P-03 | todo | |
