@@ -26,7 +26,7 @@
 | P-02 | M2 | Vercel 适配器 | P-01, C-08 | done | 实现 Vercel 静态镜像目录、deploy/unpublish 与 `npx vercel` mock 验收；`npm test` 通过（85 tests）；人工项待验：H1 登录后真实发布/撤回联调。 |
 | P-03 | M2 | Cloudflare 适配器 | P-01, C-08 | done | 实现 Cloudflare Pages 静态镜像目录、deploy/unpublish 与 `npx wrangler` mock 验收；`npm test` 通过（89 tests）；人工项待验：H2 登录后真实发布/撤回联调。 |
 | P-04 | M2 | 目标探测与首配引导 | P-01, P-02, P-03 | done | 实现 D7 目标自动探测 resolver、首次无目标三选一引导、自动记住 defaultTarget；覆盖 8 种探测矩阵与 CLI 集成；`npm test` 通过（95 tests）。 |
-| S-04 | M2 | Docker 部署脚本 | S-03 | todo | |
+| S-04 | M2 | Docker 部署脚本 | S-03 | done | 增加多阶段非 root Dockerfile、持久卷部署脚本与结构测试；`docker build` 成功、容器 `/healthz` 冒烟通过、shellcheck 通过、`npm test` 通过（97 tests）；人工项待验：H3 真机部署。 |
 | K-02 | M2 | install.sh 多 agent 安装 | K-01 | todo | |
 | K-03 | M2 | Codex 封装 | K-02 | todo | |
 | K-04 | M2 | OpenClaw/Hermes 封装 | K-02 | todo | |
