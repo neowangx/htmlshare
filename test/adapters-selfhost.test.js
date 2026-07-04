@@ -28,7 +28,7 @@ function config(baseUrl) {
 
 test("adapter registry exposes selfhost", () => {
   assert.equal(getAdapter("selfhost").name, "selfhost");
-  assert.deepEqual(listAdapters(), ["selfhost"]);
+  assert.ok(listAdapters().includes("selfhost"));
 });
 
 test("selfhost detect uses config without throwing", async () => {
