@@ -9,7 +9,7 @@
 | C-02 | M0 | 忠实转换器移植 | C-01 | done | 移植转换与净化模块，导出 `convertFaithful(md) -> { html, title, headings }`；`npm test` 通过（17 tests）。 |
 | C-03 | M0 | config/manifest 模块 | C-01 | done | 按 docs/04 §2 实现 `~/.config/htmlshare` config/manifest；覆盖空配置、upsert 幂等、路径隔离、损坏 JSON 保护；`npm test` 通过（26 tests）。 |
 | C-04 | M1 | 双模式组装器 compose | C-02 | done | 实现单文件 compose 与 V1~V6 enhanced 校验；覆盖对抗样例、toggle、忠实区逐字节保持、HTML 直传；`npm test` 通过（35 tests）。 |
-| U-01 | M1 | 设计方向样张（4 风格比选） | — | todo | |
+| U-01 | M1 | 设计方向样张（4 风格比选） | — | done | 生成 `prototype/u01/` 四风格样张；§7 可自证项测试通过（41 tests）；人工项待验：样张比选反馈与 Q6 确认写入 docs/00。 |
 | U-02 | M1 | 高保真原型包（02A §5 全覆盖） | U-01 | todo | |
 | U-03 | M1 | 客户确认门禁卡（阻塞全部界面实现卡） | U-02 | todo | |
 | C-05 | M1 | 模板骨架 + generic | C-04, U-03 | todo | |

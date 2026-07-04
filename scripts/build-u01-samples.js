@@ -1,0 +1,403 @@
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
+const outDir = join(repoRoot, "prototype", "u01");
+
+const themes = {
+  clinical: {
+    label: "Clinical",
+    note: "分区清晰，适合需要快速扫描和复盘的业务文档。",
+    vars: {
+      "--hs-bg": "#F7F8FA",
+      "--hs-surface": "#FFFFFF",
+      "--hs-text": "#1A2233",
+      "--hs-muted": "#5A6472",
+      "--hs-border": "#D8DEE8",
+      "--hs-primary": "#2456D6",
+      "--hs-success": "#1F7A4D",
+      "--hs-warning": "#B96A00",
+      "--hs-danger": "#C23934",
+      "--hs-code-bg": "#111827",
+      "--hs-code-text": "#F9FAFB",
+      "--hs-radius-card": "10px",
+      "--hs-radius-control": "8px",
+      "--hs-shadow-card": "0 1px 3px rgba(16,24,40,.07)",
+      "--hs-shadow-float": "0 8px 24px rgba(16,24,40,.12)",
+      "--hs-title-font": "-apple-system, \"PingFang SC\", \"Noto Sans SC\", sans-serif",
+      "--hs-title-size": "26px",
+      "--hs-card-border": "1px solid var(--hs-border)",
+      "--hs-card-padding": "20px"
+    }
+  },
+  minimal: {
+    label: "Minimal",
+    note: "去掉卡片存在感，用行长、细线和留白建立阅读秩序。",
+    vars: {
+      "--hs-bg": "#FCFCFC",
+      "--hs-surface": "#FCFCFC",
+      "--hs-text": "#1A2233",
+      "--hs-muted": "#5A6472",
+      "--hs-border": "#DDE1E7",
+      "--hs-primary": "#2456D6",
+      "--hs-success": "#1F7A4D",
+      "--hs-warning": "#B96A00",
+      "--hs-danger": "#C23934",
+      "--hs-code-bg": "#111827",
+      "--hs-code-text": "#F9FAFB",
+      "--hs-radius-card": "0px",
+      "--hs-radius-control": "8px",
+      "--hs-shadow-card": "none",
+      "--hs-shadow-float": "none",
+      "--hs-title-font": "-apple-system, \"PingFang SC\", \"Noto Sans SC\", sans-serif",
+      "--hs-title-size": "26px",
+      "--hs-card-border": "0",
+      "--hs-card-padding": "0"
+    }
+  },
+  editorial: {
+    label: "Editorial",
+    note: "标题和引用更像一篇长文，适合观点、研究和策略材料。",
+    vars: {
+      "--hs-bg": "#FFFFFF",
+      "--hs-surface": "#FFFFFF",
+      "--hs-text": "#1A2233",
+      "--hs-muted": "#5A6472",
+      "--hs-border": "#D8DEE8",
+      "--hs-primary": "#2456D6",
+      "--hs-success": "#1F7A4D",
+      "--hs-warning": "#B96A00",
+      "--hs-danger": "#C23934",
+      "--hs-code-bg": "#111827",
+      "--hs-code-text": "#F9FAFB",
+      "--hs-radius-card": "10px",
+      "--hs-radius-control": "8px",
+      "--hs-shadow-card": "none",
+      "--hs-shadow-float": "0 8px 24px rgba(16,24,40,.12)",
+      "--hs-title-font": "Georgia, \"Songti SC\", serif",
+      "--hs-title-size": "34px",
+      "--hs-card-border": "1px solid var(--hs-border)",
+      "--hs-card-padding": "20px"
+    }
+  },
+  darktech: {
+    label: "Darktech",
+    note: "深色、低装饰、代码块更突出，适合技术结论和发布说明。",
+    vars: {
+      "--hs-bg": "#0E1116",
+      "--hs-surface": "#161B22",
+      "--hs-text": "#E8EDF7",
+      "--hs-muted": "#AAB6C6",
+      "--hs-border": "#303846",
+      "--hs-primary": "#4C8DFF",
+      "--hs-success": "#54C18A",
+      "--hs-warning": "#E2A44F",
+      "--hs-danger": "#F06A64",
+      "--hs-code-bg": "#0B0F15",
+      "--hs-code-text": "#E8EDF7",
+      "--hs-radius-card": "10px",
+      "--hs-radius-control": "8px",
+      "--hs-shadow-card": "0 1px 3px rgba(16,24,40,.07)",
+      "--hs-shadow-float": "0 8px 24px rgba(16,24,40,.12)",
+      "--hs-title-font": "-apple-system, \"PingFang SC\", \"Noto Sans SC\", sans-serif",
+      "--hs-title-size": "26px",
+      "--hs-card-border": "1px solid var(--hs-border)",
+      "--hs-card-padding": "20px"
+    }
+  }
+};
+
+const css = `
+* { box-sizing: border-box; }
+html { background: var(--hs-bg); color: var(--hs-text); }
+body {
+  margin: 0;
+  background: var(--hs-bg);
+  color: var(--hs-text);
+  font: 400 16px/1.65 -apple-system, "PingFang SC", "Noto Sans SC", sans-serif;
+}
+a { color: var(--hs-primary); }
+.page {
+  max-width: 72ch;
+  margin: 0 auto;
+  padding: 48px 24px 64px;
+}
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 32px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--hs-border);
+}
+.eyebrow, .meta, .footer, figcaption {
+  color: var(--hs-muted);
+  font-size: 13px;
+}
+.eyebrow {
+  font-weight: 650;
+  margin-bottom: 8px;
+}
+h1 {
+  margin: 0;
+  color: var(--hs-text);
+  font-family: var(--hs-title-font);
+  font-size: var(--hs-title-size);
+  line-height: 1.22;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+h2 {
+  margin: 32px 0 12px;
+  color: var(--hs-text);
+  font-size: 20px;
+  line-height: 1.35;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+p { margin: 0 0 16px; }
+.toggle {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 4px;
+  padding: 4px;
+  min-width: 128px;
+  border: 1px solid var(--hs-border);
+  border-radius: 999px;
+  background: var(--hs-surface);
+}
+.toggle button {
+  min-height: 32px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 12px;
+  background: transparent;
+  color: var(--hs-muted);
+  font: inherit;
+  cursor: pointer;
+}
+.toggle button[aria-pressed="true"] {
+  background: var(--hs-primary);
+  color: var(--hs-surface);
+}
+.panel {
+  margin: 24px 0;
+  padding: var(--hs-card-padding);
+  background: var(--hs-surface);
+  border: var(--hs-card-border);
+  border-radius: var(--hs-radius-card);
+  box-shadow: var(--hs-shadow-card);
+}
+.tldr {
+  border-left: 3px solid var(--hs-primary);
+}
+.tldr ul { margin: 0; padding-left: 20px; }
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.task {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--hs-border);
+  border-radius: var(--hs-radius-card);
+}
+.task strong { display: block; margin-bottom: 8px; }
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  margin-top: 12px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--hs-bg);
+  color: var(--hs-muted);
+  font-size: 13px;
+}
+details {
+  border-left: 1px solid var(--hs-border);
+  padding-left: 16px;
+}
+summary {
+  cursor: pointer;
+  color: var(--hs-text);
+  font-weight: 650;
+}
+blockquote {
+  margin: 20px 0;
+  padding-left: 16px;
+  border-left: 3px solid var(--hs-primary);
+  color: var(--hs-muted);
+}
+pre {
+  overflow: auto;
+  margin: 16px 0;
+  padding: 16px;
+  background: var(--hs-code-bg);
+  color: var(--hs-code-text);
+  border-radius: var(--hs-radius-control);
+  font: 14px/1.55 ui-monospace, "SF Mono", Menlo, monospace;
+}
+table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 16px 0;
+}
+th, td {
+  padding: 8px 12px;
+  border: 1px solid var(--hs-border);
+  text-align: left;
+  white-space: nowrap;
+}
+.footer {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hs-border);
+}
+@media (max-width: 720px) {
+  .page { padding: 32px 16px 48px; }
+  .topbar { flex-direction: column; }
+  .card-grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+@media print {
+  .toggle { display: none; }
+  details:not([open]) > * { display: block; }
+}
+`;
+
+function renderVars(vars) {
+  return Object.entries(vars).map(([key, value]) => `  ${key}: ${value};`).join("\n");
+}
+
+function renderPage(key, theme) {
+  return `<!doctype html>
+<html lang="zh-CN" data-theme="${key}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>htmlshare U-01 ${theme.label}</title>
+<style>
+:root {
+${renderVars(theme.vars)}
+}
+${css}
+</style>
+</head>
+<body>
+<main class="page">
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">htmlshare · ${theme.label}</div>
+      <h1>从一次产品评审会，到一份可以直接分享的阅读页</h1>
+      <p class="meta">${theme.note}</p>
+    </div>
+    <div class="toggle" role="group" aria-label="视图切换">
+      <button type="button">原文</button>
+      <button type="button" aria-pressed="true">增强</button>
+    </div>
+  </header>
+
+  <section class="panel tldr" aria-labelledby="tldr-title">
+    <h2 id="tldr-title">TL;DR</h2>
+    <ul>
+      <li>Q3 主打「快速发布」闭环，优先保证链接稳定和访问码体验。</li>
+      <li>静态平台采用 8 位访问码加密，自托管继续保留 4 位码和限速。</li>
+      <li>本周五前完成原型走查，界面实现以确认稿为黄金标杆。</li>
+    </ul>
+  </section>
+
+  <section class="panel">
+    <h2>行动项</h2>
+    <div class="card-grid">
+      <article class="task"><strong>脚手架验收</strong>Node 20、空测试、目录结构与配置路径隔离全部通过。<span class="badge">负责人：李哲 · 今天</span></article>
+      <article class="task"><strong>原型走查</strong>检查通用文档、会议纪要、门禁页和极端数据状态。<span class="badge">负责人：产品 · 周五</span></article>
+      <article class="task"><strong>发布适配器</strong>selfhost 先跑通，再接 Vercel 与 Cloudflare 静态轨。<span class="badge">负责人：工程 · 下周</span></article>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>讨论过程</h2>
+    <p>团队确认 htmlshare 不是一个新的 CMS，而是跨 agent 的发布 skill。页面需要安静、可靠、可读，任何视觉元素都必须服务于阅读和分享。</p>
+    <blockquote>原则：默认给读者一份完成度高的网页，同时保留原文对照，避免增强内容遮蔽事实来源。</blockquote>
+    <details open>
+      <summary>展开完整技术备注</summary>
+      <p>静态托管无法做服务端限速，因此访问码需要配合浏览器端加密；服务端目标则继续使用短码和限速，保持低摩擦体验。</p>
+    </details>
+  </section>
+
+  <section class="panel">
+    <h2>数据与代码</h2>
+    <table>
+      <thead><tr><th>目标</th><th>门禁方式</th><th>默认访问码</th><th>链接策略</th></tr></thead>
+      <tbody>
+        <tr><td>selfhost</td><td>服务端限速</td><td>4 位数字</td><td>同源文件复用 id</td></tr>
+        <tr><td>vercel</td><td>AES-GCM 加密壳</td><td>8 位 Base32</td><td>固定 project 子路径</td></tr>
+        <tr><td>cloudflare</td><td>AES-GCM 加密壳</td><td>8 位 Base32</td><td>固定 project 子路径</td></tr>
+      </tbody>
+    </table>
+    <pre><code>htmlshare publish ./review.md --template meeting --style ${key}</code></pre>
+  </section>
+
+  <footer class="footer">made with htmlshare · 轻量访问码保护</footer>
+</main>
+</body>
+</html>
+`;
+}
+
+mkdirSync(outDir, { recursive: true });
+for (const [key, theme] of Object.entries(themes)) {
+  writeFileSync(join(outDir, `${key}.html`), renderPage(key, theme));
+}
+
+writeFileSync(join(outDir, "index.html"), `<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>htmlshare U-01 样张</title>
+<style>
+:root {
+  --hs-bg: #F7F8FA;
+  --hs-surface: #FFFFFF;
+  --hs-text: #1A2233;
+  --hs-muted: #5A6472;
+  --hs-border: #D8DEE8;
+  --hs-primary: #2456D6;
+}
+body { margin: 0; background: var(--hs-bg); color: var(--hs-text); font: 400 16px/1.65 -apple-system, "PingFang SC", "Noto Sans SC", sans-serif; }
+main { max-width: 720px; margin: 0 auto; padding: 48px 24px; }
+h1 { font-size: 26px; line-height: 1.25; letter-spacing: 0; }
+a { color: var(--hs-primary); }
+li { margin: 8px 0; }
+.note { color: var(--hs-muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>U-01 设计方向样张</h1>
+  <p class="note">同一份通用文档内容，四套 token 主题。用于 Q6 设计方向比选。</p>
+  <ul>
+    <li><a href="./clinical.html">Clinical</a></li>
+    <li><a href="./minimal.html">Minimal</a></li>
+    <li><a href="./editorial.html">Editorial</a></li>
+    <li><a href="./darktech.html">Darktech</a></li>
+  </ul>
+</main>
+</body>
+</html>
+`);
