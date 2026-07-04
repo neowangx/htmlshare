@@ -15,7 +15,7 @@
 | C-05 | M1 | 模板骨架 + generic | C-04, U-03 | todo | |
 | C-06 | M1 | 风格骨架 + clinical/minimal | C-05, U-03 | todo | |
 | P-01 | M1 | 适配器接口 + selfhost | C-03 | done | 实现 adapter registry/AdapterError/selfhost detect/publish/unpublish；mock HTTP 覆盖 Bearer/请求体/409/413/401；`npm test` 通过（53 tests），真实 server 联调按 S-05 补跑。 |
-| S-01 | M1 | 服务端移植改名 | C-01 | todo | |
+| S-01 | M1 | 服务端移植改名 | C-01 | done | 实现 htmlshare selfhost 基础 server：POST /api/pages、门禁页、unlock、scrypt codeHash、`data/<id>/meta.json + v1.html`；`PORT=0 node server/server.js` 启动测试通过；`npm test` 通过（57 tests）。 |
 | S-02 | M1 | 门禁与限速完善 | S-01 | todo | |
 | S-03 | M1 | REST 契约补齐 | S-02 | todo | |
 | S-05 | M1 | 服务端回归套件 | S-03, P-01 | todo | |
