@@ -11,7 +11,7 @@
 | C-04 | M1 | 双模式组装器 compose | C-02 | done | 实现单文件 compose 与 V1~V6 enhanced 校验；覆盖对抗样例、toggle、忠实区逐字节保持、HTML 直传；`npm test` 通过（35 tests）。 |
 | U-01 | M1 | 设计方向样张（4 风格比选） | — | done | 生成 `prototype/u01/` 四风格样张；§7 可自证项测试通过（41 tests）；人工项待验：样张比选反馈与 Q6 确认写入 docs/00。 |
 | U-02 | M1 | 高保真原型包（02A §5 全覆盖） | U-01 | done | 生成 `prototype/` 高保真包，覆盖 docs/02A §5 14/14；可点击切换/门禁状态/极端数据齐全；`npm test` 通过（47 tests）。 |
-| U-03 | M1 | 客户确认门禁卡（阻塞全部界面实现卡） | U-02 | todo | |
+| U-03 | M1 | 客户确认门禁卡（阻塞全部界面实现卡） | U-02 | blocked | 等待人工走查 `prototype/index.html` 并将确认结论写入 docs/00；见 NEEDS_HUMAN H13。 |
 | C-05 | M1 | 模板骨架 + generic | C-04, U-03 | todo | |
 | C-06 | M1 | 风格骨架 + clinical/minimal | C-05, U-03 | todo | |
 | P-01 | M1 | 适配器接口 + selfhost | C-03 | todo | |
