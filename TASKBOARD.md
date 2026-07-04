@@ -37,7 +37,7 @@
 | C-14 | M3 | 风格 editorial + darktech | C-06, U-03 | todo | |
 | C-15 | M3 | 高级设置 config | C-07 | done | 实现 `config show/target/selfhost/defaults`，show 脱敏 token 后 4 位；publish 读取 defaults 与 footerBadge；覆盖设置写入、脱敏、默认模板/风格/访问码生效；`npm test` 通过（106 tests）。 |
 | K-05 | M3 | SKILL.md 完整增强规则 | K-01, C-10~C-14 | todo | |
-| G-02 | M4 | GitHub 仓库与 CI（CI 可 M1 后早启） | C-01; Q4 | todo | |
+| G-02 | M4 | GitHub 仓库与 CI（CI 可 M1 后早启） | C-01; Q4 | blocked | Q4 GitHub 归属与仓库名未在 docs/00 确认；按截止点守卫冻结，不执行建仓/推送不可逆动作；见 NEEDS_HUMAN H6。 |
 | G-01 | M4 | README 与文档 | K-05 | todo | |
 | G-03 | M4 | examples 一键体验 | G-01 | todo | |
 | G-04 | M4 | v0.1.0 发布 | G-01, G-02, G-03 | todo | |
