@@ -25,3 +25,4 @@
 
 | H12 | U-01 四风格样张比选反馈：打开 `prototype/u01/index.html`，确认 clinical/minimal/editorial/darktech 方向偏好；确认结论需写入 `docs/00` 变更记录 | Q6 方向确认；U-02 可继续按推荐方向做，但最终 U-03 门禁需确认 | U-03 前 | 当前已按 Q6 推荐方向生成样张；自证测试通过，人工视觉偏好待确认 |
 | H13 | U-02 高保真原型走查确认：在仓库根目录直接打开 `prototype/index.html`（或运行 `npx serve prototype` 后打开本地地址），逐页检查 1 通用 clinical、2 通用 minimal、3 通用 editorial、4 通用 darktech、5 会议纪要、6 方案、7 教程、8 公告、9 空槽位、10 原文/增强切换、11 服务端门禁三态、12 静态解密三态、13 极端数据、14 深浅色自适应；确认结论需写入 `docs/00` 变更记录 | U-03；C-05/C-06/C-10~C-14 全部界面实现卡 | M1 中段 | 原型自证测试通过（47 tests）；等待人工视觉走查和确认 |
+| H14 | Claude Code 中实测一次 htmlshare skill 发布，并确认最终回复话术是否清楚（链接与访问码分两行） | K-01 人工体验项 | M1 末 | SKILL.md 结构与命令断言已通过；需要真实 Claude Code 技能触发体验 |
