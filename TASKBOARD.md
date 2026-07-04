@@ -55,3 +55,4 @@
 （每个里程碑出口回归通过后在此追加一行）
 
 - M0 地基：2026-07-04 达成。证据：`npm test` 通过（26 tests）；目录结构对齐 docs/03 §5；`git log` 含 C-01/C-02/C-03；运行路径隔离检查，代码/配置默认路径为 `htmlshare`，无 mdshare 路径残留。
+- M2 静态平台 + 多 agent：2026-07-04 可自证项达成。证据：C-08/C-09/P-02/P-03/P-04/S-04/K-02/K-03/K-04 全部 done；`npm test` 通过（102 tests）；`docker build` + selfhost 容器 `/healthz` 冒烟通过；install.sh 干净 HOME 沙箱幂等安装通过；人工项待验：H1/H2/H3/H4 真实目标/agent 联调。
