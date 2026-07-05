@@ -1,35 +1,10 @@
 import { escapeHtml } from "./convert.js";
 import { sanitizeEnhanced } from "./lib/sanitize.js";
+import { get as getTemplate, TEMPLATE_SLOTS } from "./templates/registry.js";
 
-const TEMPLATES = {
-  generic: ["body"],
-  meeting: ["conclusions", "actions", "open_issues", "discussion"],
-  proposal: ["summary", "problem", "solution", "plan", "risks"],
-  tutorial: ["overview", "prerequisites", "steps", "faq"],
-  release: ["highlights", "changes", "upgrade_notes"]
-};
+const TEMPLATES = TEMPLATE_SLOTS;
 
 const STYLES = new Set(["clinical", "minimal", "editorial", "darktech"]);
-
-const SLOT_LABELS = {
-  body: "正文",
-  conclusions: "结论",
-  actions: "行动项",
-  open_issues: "开放问题",
-  discussion: "讨论过程",
-  summary: "摘要",
-  problem: "问题",
-  solution: "方案",
-  plan: "计划",
-  risks: "风险",
-  overview: "概览",
-  prerequisites: "前置条件",
-  steps: "步骤",
-  faq: "FAQ",
-  highlights: "亮点",
-  changes: "变更",
-  upgrade_notes: "升级说明"
-};
 
 const BASE_CSS = `
 :root { color-scheme: light; --bg:#f7f8fb; --ink:#172033; --muted:#657189; --line:#dfe5ee; --panel:#ffffff; --accent:#2864d8; }
@@ -164,13 +139,13 @@ export function validateEnhanced(input, faithfulHtml = "") {
 }
 
 function renderEnhancedBody(enhanced) {
-  const tldrItems = enhanced.tldr.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
-  const sections = enhanced.sections.map((section) => {
-    const label = SLOT_LABELS[section.slot] || section.slot;
-    return `<section class="hs-section" data-slot="${escapeHtml(section.slot)}"><h2>${escapeHtml(label)}</h2>${section.html}</section>`;
-  }).join("");
-
-  return `<div class="hs-tldr"><h2>TL;DR</h2><ul>${tldrItems}</ul></div>${sections}`;
+  const template = getTemplate(enhanced.template);
+  return template.render(enhanced.sections, {
+    title: enhanced.title,
+    tldr: enhanced.tldr,
+    template: enhanced.template,
+    style: enhanced.style
+  });
 }
 
 function renderToggle(hasEnhanced) {
