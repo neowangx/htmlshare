@@ -38,7 +38,7 @@
 | C-15 | M3 | 高级设置 config | C-07 | done | 实现 `config show/target/selfhost/defaults`，show 脱敏 token 后 4 位；publish 读取 defaults 与 footerBadge；覆盖设置写入、脱敏、默认模板/风格/访问码生效；`npm test` 通过（106 tests）。 |
 | K-05 | M3 | SKILL.md 完整增强规则 | K-01, C-10~C-14 | done | 将 docs/05 §2~§4/§6 完整落入主 `SKILL.md`，并重生成 Codex/OpenClaw/Hermes 封装；新增 docs/05 样例 A/B/C 固定资产与 template 判定断言、docs/04 §8 枚举 diff 断言；`npm test` 通过（145 tests）；人工项待验：H18 版式质量走查。 |
 | G-02 | M4 | GitHub 仓库与 CI（CI 可 M1 后早启） | C-01; Q4 | blocked | Q4 GitHub 归属与仓库名未在 docs/00 确认；按截止点守卫冻结，不执行建仓/推送不可逆动作；见 NEEDS_HUMAN H6。 |
-| G-01 | M4 | README 与文档 | K-05 | todo | |
+| G-01 | M4 | README 与文档 | K-05 | done | 新增中英双语 README、server/README、自证概览图 `examples/screenshots/overview.svg`；README 明确官方云服务端不开源、默认 100MB 免费空间、访问码非强安全；新增 README doctest/死链/声明断言；`npm test` 通过（148 tests）。 |
 | G-03 | M4 | examples 一键体验 | G-01 | todo | |
 | G-04 | M4 | v0.1.0 发布 | G-01, G-02, G-03 | blocked | 依赖 G-02；当前受 Q4 GitHub 归属与仓库名确认冻结，见 NEEDS_HUMAN H6。 |
 | V-01 | M5 | 私有仓初始化 + 多租户模型 | S-03 | done | 初始化兄弟私有仓 `../htmlshare-cloud`（git commit `05d9202`），复制开源 server 契约测试原样通过，新增 better-sqlite3 索引层 users/pages/versions/usage_events 与文件系统一致性断言；云仓 `npm test` 通过（15 tests）。 |
