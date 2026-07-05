@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Q3 产品评审会议纪要</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --hs-bg: #F7F8FA;
+  --hs-panel: #FFFFFF;
+  --hs-panel-subtle: #FBFCFD;
+  --hs-ink: #1A2233;
+  --hs-muted: #5A6472;
+  --hs-line: #DFE5EE;
+  --hs-accent: #2456D6;
+  --hs-accent-ink: #FFFFFF;
+  --hs-accent-soft: #EAF0FF;
+  --hs-code-bg: #111827;
+  --hs-code-ink: #F9FAFB;
+  --hs-shadow-card: 0 1px 3px rgba(16,24,40,.07);
+  --hs-shadow-float: 0 8px 24px rgba(16,24,40,.12);
+  --hs-radius-card: 10px;
+  --hs-radius-control: 8px;
+  --hs-font-body: -apple-system, "PingFang SC", "Noto Sans SC", sans-serif;
+  --hs-font-code: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --hs-bg: #10151C;
+    --hs-panel: #171E27;
+    --hs-panel-subtle: #121922;
+    --hs-ink: #E8EEF7;
+    --hs-muted: #A8B3C1;
+    --hs-line: #2B3542;
+    --hs-accent: #7AA2FF;
+    --hs-accent-ink: #07111F;
+    --hs-accent-soft: #1B2B4D;
+    --hs-code-bg: #0B1017;
+    --hs-code-ink: #E8EEF7;
+    --hs-shadow-card: 0 1px 3px rgba(0,0,0,.28);
+    --hs-shadow-float: 0 8px 24px rgba(0,0,0,.35);
+  }
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--hs-bg); color: var(--hs-ink); font: 16px/1.65 var(--hs-font-body); }
+main { width: min(960px, calc(100% - 32px)); margin: 40px auto; }
+.hs-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--hs-line); padding-bottom: 16px; margin-bottom: 24px; }
+h1 { font-size: 28px; line-height: 1.2; margin: 0; letter-spacing: 0; }
+#hs-toggle { display: inline-flex; gap: 4px; border: 1px solid var(--hs-line); border-radius: var(--hs-radius-control); padding: 4px; background: var(--hs-panel); }
+#hs-toggle button { border: 0; border-radius: calc(var(--hs-radius-control) - 2px); padding: 6px 10px; background: transparent; color: var(--hs-muted); cursor: pointer; font: inherit; transition: background 120ms ease-out, color 120ms ease-out; }
+#hs-toggle button[aria-pressed="true"] { background: var(--hs-accent); color: var(--hs-accent-ink); }
+.hs-panel { background: var(--hs-panel); border: 1px solid var(--hs-line); border-radius: var(--hs-radius-card); padding: 24px; box-shadow: var(--hs-shadow-card); }
+.hs-tldr { margin: 0 0 20px; padding: 16px 18px; border-left: 4px solid var(--hs-accent); background: var(--hs-accent-soft); }
+.hs-tldr h2, .hs-section h2 { font-size: 16px; margin: 0 0 10px; letter-spacing: 0; }
+.hs-tldr ul { margin: 0; padding-left: 20px; }
+.hs-section + .hs-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--hs-line); }
+.hs-footer { margin-top: 22px; color: var(--hs-muted); font-size: 13px; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid var(--hs-line); padding: 6px 8px; }
+pre { overflow: auto; padding: 12px; background: var(--hs-code-bg); color: var(--hs-code-ink); border-radius: var(--hs-radius-control); }
+code { font-family: var(--hs-font-code); }
+img { max-width: 100%; height: auto; }
+.hs-action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.hs-action-card { border: 1px solid var(--hs-line); border-radius: var(--hs-radius-card); padding: 14px; background: var(--hs-panel-subtle); }
+.hs-action-card p { margin: 10px 0; }
+.hs-action-owner, .hs-action-due { display: inline-flex; color: var(--hs-muted); font-size: 13px; }
+.hs-action-owner { border: 1px solid var(--hs-line); border-radius: 999px; padding: 2px 8px; }
+.hs-steps li + li { margin-top: 8px; }
+.hs-faq-item + .hs-faq-item { margin-top: 10px; }
+.hs-change-group + .hs-change-group { margin-top: 14px; }
+.hs-change-badge { display: inline-flex; border: 1px solid var(--hs-line); border-radius: 999px; padding: 2px 8px; color: var(--hs-muted); font-size: 13px; }
+details > summary { cursor: pointer; }
+@media print { #hs-toggle { display: none; } details[open], details:not([open]) { display: block; } details:not([open]) > * { display: block; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body data-hs-style="clinical">
+<main>
+<header class="hs-topbar"><h1>Q3 产品评审会议纪要</h1><div id="hs-toggle" role="group" aria-label="视图切换"><button type="button" data-view="faithful" aria-pressed="false">原文</button><button type="button" data-view="enhanced" aria-pressed="true">增强</button></div></header>
+<section id="hs-enhanced" class="hs-panel"><div class="hs-tldr"><h2>TL;DR</h2><ul><li>Q3 主推团队协作仪表盘</li><li>灰度名单 7 月 12 日前完成</li><li>预算上限 8 万元</li></ul></div><section class="hs-section" data-slot="conclusions"><h2>结论</h2><ul><li>决定 Q3 主推团队协作仪表盘，先覆盖销售和客服两个团队。</li><li>决定 7 月 12 日前完成灰度名单，由 Ada 负责。</li><li>决定预算上限为 8 万元，不新增外包。</li></ul></section><section class="hs-section" data-slot="actions"><h2>行动项</h2><div class="hs-action-grid"><article class="hs-action-card"><span class="hs-action-owner">Ada</span><p>整理灰度名单</p><span class="hs-action-due">2026-07-12</span></article><article class="hs-action-card"><span class="hs-action-owner">周宁</span><p>输出埋点清单</p><span class="hs-action-due">2026-07-10</span></article><article class="hs-action-card"><span class="hs-action-owner">李想</span><p>准备客户访谈问题</p><span class="hs-action-due">2026-07-09</span></article><article class="hs-action-card"><span class="hs-action-owner">小林</span><p>更新发布节奏表</p><span class="hs-action-due">2026-07-08</span></article></div></section><section class="hs-section" data-slot="discussion"><h2>讨论过程</h2><details><summary>讨论记录</summary><p>议题一：销售团队需要看线索响应时长，客服团队更关心升级工单数量。大家同意第一版只做共用指标，不做复杂权限。</p><p>议题二：周宁提醒埋点缺口较大，需要先补事件上报。Ada 认为灰度团队不要超过 20 人，避免支持压力过高。</p><p>议题三：李想建议把客户访谈放在灰度前一周完成，会议同意。</p></details></section></section>
+<section id="hs-faithful" class="hs-panel" hidden><h1>Q3 产品评审会议纪要</h1>
+<p>时间：2026-07-05 10:00
+地点：线上会议
+与会人：小林、Ada、周宁、李想</p>
+<h2>决议</h2>
+<ul>
+<li>决定 Q3 主推团队协作仪表盘，先覆盖销售和客服两个团队。</li>
+<li>决定 7 月 12 日前完成灰度名单，由 Ada 负责。</li>
+<li>决定预算上限为 8 万元，不新增外包。</li>
+</ul>
+<h2>行动项</h2>
+<ul>
+<li>Ada | 整理灰度名单 | 2026-07-12</li>
+<li>周宁 | 输出埋点清单 | 2026-07-10</li>
+<li>李想 | 准备客户访谈问题 | 2026-07-09</li>
+<li>小林 | 更新发布节奏表 | 2026-07-08</li>
+</ul>
+<h2>讨论记录</h2>
+<p>议题一：销售团队需要看线索响应时长，客服团队更关心升级工单数量。大家同意第一版只做共用指标，不做复杂权限。</p>
+<p>议题二：周宁提醒埋点缺口较大，需要先补事件上报。Ada 认为灰度团队不要超过 20 人，避免支持压力过高。</p>
+<p>议题三：李想建议把客户访谈放在灰度前一周完成，会议同意。</p></section>
+<footer class="hs-footer">made with htmlshare · 轻量访问码保护</footer>
+</main>
+<script>
+(() => {
+  const toggle = document.querySelector("#hs-toggle");
+  if (!toggle) return;
+  const enhanced = document.querySelector("#hs-enhanced");
+  const faithful = document.querySelector("#hs-faithful");
+  function show(view) {
+    enhanced.hidden = view !== "enhanced";
+    faithful.hidden = view !== "faithful";
+    for (const button of toggle.querySelectorAll("button")) {
+      button.setAttribute("aria-pressed", String(button.dataset.view === view));
+    }
+  }
+  toggle.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-view]");
+    if (button) show(button.dataset.view);
+  });
+})();
+</script>
+</body>
+</html>
