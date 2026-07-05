@@ -11,9 +11,9 @@
 | C-04 | M1 | 双模式组装器 compose | C-02 | done | 实现单文件 compose 与 V1~V6 enhanced 校验；覆盖对抗样例、toggle、忠实区逐字节保持、HTML 直传；`npm test` 通过（35 tests）。 |
 | U-01 | M1 | 设计方向样张（4 风格比选） | — | done | 生成 `prototype/u01/` 四风格样张；§7 可自证项测试通过（41 tests）；人工项待验：样张比选反馈与 Q6 确认写入 docs/00。 |
 | U-02 | M1 | 高保真原型包（02A §5 全覆盖） | U-01 | done | 生成 `prototype/` 高保真包，覆盖 docs/02A §5 14/14；可点击切换/门禁状态/极端数据齐全；`npm test` 通过（47 tests）。 |
-| U-03 | M1 | 客户确认门禁卡（阻塞全部界面实现卡） | U-02 | blocked | 等待人工走查 `prototype/index.html` 并将确认结论写入 docs/00；见 NEEDS_HUMAN H13。 |
-| C-05 | M1 | 模板骨架 + generic | C-04, U-03 | blocked | 下游界面实现卡受 U-03 原型门禁冻结；等待人工走查 `prototype/index.html` 并将确认结论写入 docs/00；见 NEEDS_HUMAN H13。 |
-| C-06 | M1 | 风格骨架 + clinical/minimal | C-05, U-03 | blocked | 依赖 C-05 与 U-03；当前受 U-03 原型门禁冻结，见 NEEDS_HUMAN H13。 |
+| U-03 | M1 | 客户确认门禁卡（阻塞全部界面实现卡） | U-02 | done | 用户确认 `prototype/index.html` 原型走查通过，结论已写入 docs/00 变更记录（2026-07-05）；D15 门禁解除。 |
+| C-05 | M1 | 模板骨架 + generic | C-04, U-03 | todo | |
+| C-06 | M1 | 风格骨架 + clinical/minimal | C-05, U-03 | todo | |
 | P-01 | M1 | 适配器接口 + selfhost | C-03 | done | 实现 adapter registry/AdapterError/selfhost detect/publish/unpublish；mock HTTP 覆盖 Bearer/请求体/409/413/401；`npm test` 通过（53 tests），真实 server 联调按 S-05 补跑。 |
 | S-01 | M1 | 服务端移植改名 | C-01 | done | 实现 htmlshare selfhost 基础 server：POST /api/pages、门禁页、unlock、scrypt codeHash、`data/<id>/meta.json + v1.html`；`PORT=0 node server/server.js` 启动测试通过；`npm test` 通过（57 tests）。 |
 | S-02 | M1 | 门禁与限速完善 | S-01 | done | 补 unlock 内存滑窗限速、成功后 cookie 直通、Path/HttpOnly/SameSite/Max-Age 断言、跨 id 不串；`npm test` 通过（60 tests）。 |
@@ -30,17 +30,17 @@
 | K-02 | M2 | install.sh 多 agent 安装 | K-01 | done | 实现一行安装器：clone/update 到 `~/.htmlshare`、`npm install --omit=dev`、安装 CLI symlink、Claude skill symlink，并为 Codex/OpenClaw/Hermes 留占位探测；干净 HOME 沙箱跑两遍幂等、shellcheck 通过、`npm test` 通过（99 tests）。 |
 | K-03 | M2 | Codex 封装 | K-02 | done | 基于本机 codex-cli 0.142.5 与 `~/.codex/AGENTS.md` 约定生成 Codex 封装；安装器支持 marker 幂等注入；生成物与 SKILL.md 关键指令逐段对应；shellcheck 通过、`npm test` 通过（101 tests）；人工项待验：H4 Codex 真实发布。 |
 | K-04 | M2 | OpenClaw/Hermes 封装 | K-02 | done | 基于本机 Hermes Agent v0.18.0 与 `~/.hermes/skills`、`~/.openclaw/skills` 目录约定生成 SKILL.md 封装；安装器支持 symlink 落位；生成物与 SKILL.md 关键指令逐段对应；shellcheck 通过、`npm test` 通过（102 tests）；人工项待验：H4 OpenClaw/Hermes 真实发布。 |
-| C-10 | M3 | 模板 meeting | C-05, U-03 | blocked | 依赖 C-05 与 U-03；当前受 U-03 原型门禁冻结，见 NEEDS_HUMAN H13。 |
-| C-11 | M3 | 模板 proposal | C-05, U-03 | blocked | 依赖 C-05 与 U-03；当前受 U-03 原型门禁冻结，见 NEEDS_HUMAN H13。 |
-| C-12 | M3 | 模板 tutorial | C-05, U-03 | blocked | 依赖 C-05 与 U-03；当前受 U-03 原型门禁冻结，见 NEEDS_HUMAN H13。 |
-| C-13 | M3 | 模板 release | C-05, U-03 | blocked | 依赖 C-05 与 U-03；当前受 U-03 原型门禁冻结，见 NEEDS_HUMAN H13。 |
-| C-14 | M3 | 风格 editorial + darktech | C-06, U-03 | blocked | 依赖 C-06 与 U-03；当前受 U-03 原型门禁冻结，见 NEEDS_HUMAN H13。 |
+| C-10 | M3 | 模板 meeting | C-05, U-03 | todo | |
+| C-11 | M3 | 模板 proposal | C-05, U-03 | todo | |
+| C-12 | M3 | 模板 tutorial | C-05, U-03 | todo | |
+| C-13 | M3 | 模板 release | C-05, U-03 | todo | |
+| C-14 | M3 | 风格 editorial + darktech | C-06, U-03 | todo | |
 | C-15 | M3 | 高级设置 config | C-07 | done | 实现 `config show/target/selfhost/defaults`，show 脱敏 token 后 4 位；publish 读取 defaults 与 footerBadge；覆盖设置写入、脱敏、默认模板/风格/访问码生效；`npm test` 通过（106 tests）。 |
-| K-05 | M3 | SKILL.md 完整增强规则 | K-01, C-10~C-14 | blocked | 依赖 C-10~C-14；当前受 U-03 原型门禁冻结，见 NEEDS_HUMAN H13。 |
+| K-05 | M3 | SKILL.md 完整增强规则 | K-01, C-10~C-14 | todo | |
 | G-02 | M4 | GitHub 仓库与 CI（CI 可 M1 后早启） | C-01; Q4 | blocked | Q4 GitHub 归属与仓库名未在 docs/00 确认；按截止点守卫冻结，不执行建仓/推送不可逆动作；见 NEEDS_HUMAN H6。 |
-| G-01 | M4 | README 与文档 | K-05 | blocked | 依赖 K-05；当前受 U-03 原型门禁冻结，见 NEEDS_HUMAN H13。 |
-| G-03 | M4 | examples 一键体验 | G-01 | blocked | 依赖 G-01；当前受 K-05/U-03 原型门禁冻结，见 NEEDS_HUMAN H13。 |
-| G-04 | M4 | v0.1.0 发布 | G-01, G-02, G-03 | blocked | 依赖 G-01/G-03 与 G-02；当前受 U-03 原型门禁与 Q4 GitHub 确认冻结，见 NEEDS_HUMAN H6/H13。 |
+| G-01 | M4 | README 与文档 | K-05 | todo | |
+| G-03 | M4 | examples 一键体验 | G-01 | todo | |
+| G-04 | M4 | v0.1.0 发布 | G-01, G-02, G-03 | blocked | 依赖 G-02；当前受 Q4 GitHub 归属与仓库名确认冻结，见 NEEDS_HUMAN H6。 |
 | V-01 | M5 | 私有仓初始化 + 多租户模型 | S-03 | done | 初始化兄弟私有仓 `../htmlshare-cloud`（git commit `05d9202`），复制开源 server 契约测试原样通过，新增 better-sqlite3 索引层 users/pages/versions/usage_events 与文件系统一致性断言；云仓 `npm test` 通过（15 tests）。 |
 | V-02 | M5 | 设备码登录 | V-01 | done | 在 `../htmlshare-cloud` 实现设备码登录（commit `a00ab2c`）：/api/auth/device、/api/auth/token、/activate 邮箱验证码 outbox、一次性 token 与 token_hash 存储，上传端点接受用户 Bearer；云仓 `npm test` 通过（18 tests）。 |
 | V-03 | M5 | 配额与用量 | V-02 | done | 在 `../htmlshare-cloud` 实现配额与用量（commit `ae32114`）：用户 token 发布归属、/api/me、free/pro env 限制、页数/体积拦截、删除释放配额、view usage_events；云仓 `npm test` 通过（21 tests）。 |
@@ -48,7 +48,7 @@
 | V-05 | M5 | 用户控制台 | V-02 | done | 在 `../htmlshare-cloud` 实现最小用户控制台（commit `a17b340`）：邮箱验证码登录、页面列表、删除、重置访问码、owner 越权保护，服务端渲染无前端框架；云仓 `npm test` 通过（23 tests）。 |
 | P-05 | M5 | cloud 适配器 + login | P-01, V-02 | done | 实现开源 cloud 适配器与 `htmlshare login` 设备码轮询，发布复用 selfhost REST 契约，402/403 返回升级/清理提示，弱耦合断言保护核心层不引入 cloud；`npm test` 通过（114 tests）。 |
 | V-06 | M5 | 部署上线（Q1 截止点） | V-04, V-05 | blocked | 依赖 V-04，且 Q1 域名/上线路线未在 docs/00 确认；按截止点守卫冻结部署上线，不读取真实部署凭据；见 NEEDS_HUMAN H7/H15。 |
-| V-07 | M5 | 计费接入（Q2 截止点守卫） | V-06 | blocked | 依赖 V-06，且 Q2 支付渠道未在 docs/00 确认；按截止点守卫冻结计费接入；见 NEEDS_HUMAN H9。 |
+| V-07 | M5 | 计费接入（Q2 截止点守卫） | V-06 | blocked | Q2 已确认采用微信收款 + 手动开通过渡方案；当前仅因依赖 V-06 未完成而冻结。 |
 
 ## 里程碑达成记录
 
