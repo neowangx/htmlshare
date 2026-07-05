@@ -44,10 +44,10 @@
 | V-01 | M5 | 私有仓初始化 + 多租户模型 | S-03 | done | 初始化兄弟私有仓 `../htmlshare-cloud`（git commit `05d9202`），复制开源 server 契约测试原样通过，新增 better-sqlite3 索引层 users/pages/versions/usage_events 与文件系统一致性断言；云仓 `npm test` 通过（15 tests）。 |
 | V-02 | M5 | 设备码登录 | V-01 | done | 在 `../htmlshare-cloud` 实现设备码登录（commit `a00ab2c`）：/api/auth/device、/api/auth/token、/activate 邮箱验证码 outbox、一次性 token 与 token_hash 存储，上传端点接受用户 Bearer；云仓 `npm test` 通过（18 tests）。 |
 | V-03 | M5 | 配额与用量 | V-02 | done | 在 `../htmlshare-cloud` 实现配额与用量（commit `ae32114`）：用户 token 发布归属、/api/me、free/pro env 限制、页数/体积拦截、删除释放配额、view usage_events；云仓 `npm test` 通过（21 tests）。 |
-| V-04 | M5 | 计划限制与回收（Q3 截止点） | V-03 | blocked | Q3 免费/付费额度数值未在 docs/00 确认；按截止点守卫冻结，不执行计划限制/回收策略固化；见 NEEDS_HUMAN H15。 |
+| V-04 | M5 | 计划限制与回收（Q3 截止点） | V-03 | todo | |
 | V-05 | M5 | 用户控制台 | V-02 | done | 在 `../htmlshare-cloud` 实现最小用户控制台（commit `a17b340`）：邮箱验证码登录、页面列表、删除、重置访问码、owner 越权保护，服务端渲染无前端框架；云仓 `npm test` 通过（23 tests）。 |
 | P-05 | M5 | cloud 适配器 + login | P-01, V-02 | done | 实现开源 cloud 适配器与 `htmlshare login` 设备码轮询，发布复用 selfhost REST 契约，402/403 返回升级/清理提示，弱耦合断言保护核心层不引入 cloud；`npm test` 通过（114 tests）。 |
-| V-06 | M5 | 部署上线（Q1 截止点） | V-04, V-05 | blocked | 依赖 V-04，且 Q1 域名/上线路线未在 docs/00 确认；按截止点守卫冻结部署上线，不读取真实部署凭据；见 NEEDS_HUMAN H7/H15。 |
+| V-06 | M5 | 部署上线（Q1 截止点） | V-04, V-05 | blocked | 依赖 V-04，且 Q1 域名/上线路线未在 docs/00 确认；按截止点守卫冻结部署上线，不读取真实部署凭据；见 NEEDS_HUMAN H7。 |
 | V-07 | M5 | 计费接入（Q2 截止点守卫） | V-06 | blocked | Q2 已确认采用微信收款 + 手动开通过渡方案；当前仅因依赖 V-06 未完成而冻结。 |
 
 ## 里程碑达成记录
