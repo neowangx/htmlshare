@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "template": "tutorial",
+  "style": "darktech",
+  "title": "本地启动 htmlshare 自托管服务",
+  "tldr": [
+    "先确认 Node.js 20 与依赖就绪",
+    "用 PORT 启动 server 并检查 healthz",
+    "配置 selfhost 后发布 Markdown"
+  ],
+  "sections": [
+    {
+      "slot": "prerequisites",
+      "html": "<ul><li>已安装 Node.js 20 或更高版本。</li><li>当前目录已经运行 <code>npm install</code>。</li><li>终端可以访问项目根目录。</li></ul>"
+    },
+    {
+      "slot": "steps",
+      "html": "<ol><li>运行 <code>npm test</code>，确认测试通过。</li><li>运行 <code>PORT=8787 node server/server.js</code> 启动服务。</li><li>打开 <code>http://localhost:8787/healthz</code>，确认返回 <code>ok</code>。</li><li>运行 <code>htmlshare config selfhost http://localhost:8787 &lt;token&gt;</code> 写入自托管目标。</li><li>运行 <code>htmlshare publish ./note.md --target selfhost</code> 发布一份 Markdown。</li></ol>"
+    },
+    {
+      "slot": "faq",
+      "html": "<ul><li>如果端口被占用，换一个 PORT 值重新启动。</li><li>如果发布返回 401，检查 token 是否与服务端环境变量一致。</li></ul>"
+    }
+  ]
+}

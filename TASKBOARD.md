@@ -36,7 +36,7 @@
 | C-13 | M3 | 模板 release | C-05, U-03 | done | 新增 release 专用模板 renderer：highlights/changes/upgrade_notes 按序渲染，changes 支持新增/修复/破坏性/其他分组徽标，缺失 upgrade_notes 不渲染空标题；`npm test` 通过（138 tests）。 |
 | C-14 | M3 | 风格 editorial + darktech | C-06, U-03 | done | 新增 editorial/darktech 两套 token 风格，style registry 补齐 4 枚举；覆盖 editorial/darktech 对比度、零外链与 4 风格 × 5 模板组合冒烟；`npm test` 通过（141 tests）；人工项待验：H5/H17 视觉走查。 |
 | C-15 | M3 | 高级设置 config | C-07 | done | 实现 `config show/target/selfhost/defaults`，show 脱敏 token 后 4 位；publish 读取 defaults 与 footerBadge；覆盖设置写入、脱敏、默认模板/风格/访问码生效；`npm test` 通过（106 tests）。 |
-| K-05 | M3 | SKILL.md 完整增强规则 | K-01, C-10~C-14 | todo | |
+| K-05 | M3 | SKILL.md 完整增强规则 | K-01, C-10~C-14 | done | 将 docs/05 §2~§4/§6 完整落入主 `SKILL.md`，并重生成 Codex/OpenClaw/Hermes 封装；新增 docs/05 样例 A/B/C 固定资产与 template 判定断言、docs/04 §8 枚举 diff 断言；`npm test` 通过（145 tests）；人工项待验：H18 版式质量走查。 |
 | G-02 | M4 | GitHub 仓库与 CI（CI 可 M1 后早启） | C-01; Q4 | blocked | Q4 GitHub 归属与仓库名未在 docs/00 确认；按截止点守卫冻结，不执行建仓/推送不可逆动作；见 NEEDS_HUMAN H6。 |
 | G-01 | M4 | README 与文档 | K-05 | todo | |
 | G-03 | M4 | examples 一键体验 | G-01 | todo | |

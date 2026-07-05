@@ -19,7 +19,7 @@ htmlshare publish <file.html>
 ```
 
 3. If the file is Markdown, decide whether to create an enhanced view. Default to enhanced unless the user asks for faithful-only or time is tight.
-4. For enhancement, choose one template and one style:
+4. For enhancement, choose one template and one style. If the user explicitly sets `--template`, `--style`, or config defaults, obey the user even when the content appears mismatched.
 
 Templates: `generic`, `meeting`, `proposal`, `tutorial`, `release`.
 Styles: `clinical`, `minimal`, `editorial`, `darktech`.
@@ -51,21 +51,60 @@ htmlshare publish <file.md>
 
 ## Enhancement Rules
 
-Never change facts: numbers, dates, amounts, names, conclusions, and commitments must remain exact.
+Red lines:
 
-Never drop information. Every original information point must remain available in the enhanced view, using `<details>` for background or process detail when useful.
+- Never change facts: numbers, dates, amounts, names, conclusions, and commitments must remain exact.
+- Never drop information. Every original information point must remain available in the enhanced view, using `<details>` only for background, process detail, raw notes, or appendices.
+- Never add opinions, interpretations, conclusions, or facts not present in the original. TL;DR items may summarize only what the source already says.
+- Preserve code blocks, quotes, and links exactly.
 
-Never add opinions, interpretations, or facts not present in the original.
+Template rubric, checked from top to bottom. The first template with any 2 matching signals wins. If fewer than 2 signals match, use `generic`.
 
-Use TL;DR for the reader's most useful takeaways: conclusions first, then actions, then key data. Keep 1 to 5 items.
+| Template | Signals |
+|---|---|
+| `meeting` | attendees/time/place; decisions or action-item language such as "决定", "负责", "截止"; content proceeds by speaker or agenda topic; title contains meeting/notes/review/sync wording such as "会议", "纪要", "评审", "同步" |
+| `proposal` | states a problem and proposes a solution; has sections such as goal/solution/plan/budget/risk; tries to persuade a decision maker |
+| `tutorial` | proceeds through numbered steps; has prerequisites or environment requirements; mainly imperative instructions such as run/click/install |
+| `release` | starts with a version or date; includes change lists such as added/fixed/breaking changes; includes upgrade notes |
+| `generic` | none of the above, including essays, analysis, notes, and mixed content |
 
-Only use tables when the source has real two-dimensional data. Only use card groups when there are at least 3 similar items. Preserve code blocks, quotes, and links exactly.
+Slot sets must match the selected template exactly:
 
-For meeting/proposal action items, extract owner, task, and deadline. If missing, write `未指定`; do not guess.
+| Template | Slots |
+|---|---|
+| `generic` | `body` |
+| `meeting` | `conclusions`, `actions`, `open_issues`, `discussion` |
+| `proposal` | `summary`, `problem`, `solution`, `plan`, `risks` |
+| `tutorial` | `overview`, `prerequisites`, `steps`, `faq` |
+| `release` | `highlights`, `changes`, `upgrade_notes` |
+
+Style selection, unless the user configured or requested a style:
+
+| Style | Use when |
+|---|---|
+| `clinical` | business/client-facing material, meetings, proposals; restrained professional card layout; default when unsure |
+| `minimal` | pure text long reads, analysis, essays; typography does almost all the work |
+| `editorial` | public-facing reading, tutorials, release announcements; stronger headline rhythm |
+| `darktech` | code-heavy material, developer audience, prototype/demo companion notes |
+
+Content rules:
+
+- TL;DR must contain 1 to 5 items. Choose what the reader most needs to take away: conclusions first, then actions, then key data. Keep each item short, preferably 40 Chinese characters or fewer.
+- Fill only slots that have source content. Omit empty slots; never invent material to fill a slot.
+- Use `<details>` only for process/background/raw/appendix content. Never hide primary conclusions, actions, risks, upgrade steps, or required instructions.
+- Use card groups only when there are at least 3 similar items.
+- Use tables only when the source has real two-dimensional data. Do not force prose into a table.
+- For meeting/proposal action items, extract owner, task, and deadline. If missing, write `未指定`; do not guess.
 
 ## Failure Fallbacks
 
-If `enhanced.json` validation fails, try once to fix it. If it still fails, publish without `--enhanced`.
+If the agent cannot produce `enhanced.json`, including headless mode, a weak model, or a user request to skip enhancement, publish without `--enhanced` and say this share is the faithful original version.
+
+If `enhanced.json` validation fails because JSON/schema or template/style enum checks fail, try once to fix it using the validation error. If it still fails, publish without `--enhanced` and include one short reason.
+
+If enhancement takes more than 60 seconds, stop enhancing and publish without `--enhanced`.
+
+If the user requested a template or style that appears mismatched, obey the user and do not second-guess the choice.
 
 If upload fails, report the failure and mention that the rendered artifact is cached for retry.
 
