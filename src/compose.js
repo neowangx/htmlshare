@@ -5,7 +5,7 @@ import { get as getStyle, list as listStyles } from "./styles/registry.js";
 
 const TEMPLATES = TEMPLATE_SLOTS;
 
-const STYLES = new Set([...listStyles(), "editorial", "darktech"]);
+const STYLES = new Set(listStyles());
 
 const STRUCTURE_CSS = `
 * { box-sizing: border-box; }

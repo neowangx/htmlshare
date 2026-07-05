@@ -28,3 +28,4 @@
 | H14 | Claude Code 中实测一次 htmlshare skill 发布，并确认最终回复话术是否清楚（链接与访问码分两行） | K-01 人工体验项 | M1 末 | SKILL.md 结构与命令断言已通过；需要真实 Claude Code 技能触发体验 |
 | H15 | Q3 免费/付费额度数值确认：是否采用 docs/00 推荐值（免费 20 页/5MB/5 版本/180 天回收；Pro 500 页/20MB/50 版本/自定义域名/访问统计）或修改 | V-04 计划限制与回收策略 | V-04 开工前 | 已完成：用户确认官方 Studio/云服务默认提供 100MB 免费空间，更多空间付费扩容或设置自己的 Vercel / Cloudflare |
 | H16 | C-06 clinical/minimal 两风格真实浏览器视觉走查：检查增强页/忠实页、深浅色、自适应宽度、开关与 reduced-motion 体验是否贴近 `prototype/index.html` 黄金标杆 | C-06 人工视觉项；后续 C-14/G-04 视觉项参考 | M4 前 | 自证项已通过（124 tests）；等待人工浏览器视觉确认 |
+| H17 | C-14 editorial/darktech 两风格真实浏览器视觉走查：重点检查 editorial 长文排版、darktech 深色可读性，以及 4 风格 × 5 模板组合是否贴近 `prototype/index.html` 黄金标杆 | C-14/G-04 人工视觉项 | M4 前 | 自证项已通过（141 tests）；等待人工浏览器视觉确认 |

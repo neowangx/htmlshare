@@ -1,10 +1,14 @@
 import { AdapterError } from "../adapters/errors.js";
 import * as clinical from "./clinical.js";
 import * as minimal from "./minimal.js";
+import * as editorial from "./editorial.js";
+import * as darktech from "./darktech.js";
 
 const registry = new Map([
   [clinical.name, clinical],
-  [minimal.name, minimal]
+  [minimal.name, minimal],
+  [editorial.name, editorial],
+  [darktech.name, darktech]
 ]);
 
 export function list() {

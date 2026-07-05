@@ -32,7 +32,8 @@ function token(css, name, dark = false) {
 }
 
 test("C-06 style registry exposes clinical and minimal", () => {
-  assert.deepEqual(list(), ["clinical", "minimal"]);
+  assert.ok(list().includes("clinical"));
+  assert.ok(list().includes("minimal"));
 });
 
 test("C-06 unknown style error lists legal enum values", () => {
@@ -71,4 +72,51 @@ test("C-06 minimal style changes the rendered page tokens", () => {
   const { html } = composePage({ title: "Minimal", faithfulHtml: "<p>正文</p>", style: "minimal" });
   assert.match(html, /--hs-bg: #FCFCFC;/);
   assert.match(html, /--hs-shadow-card: none;/);
+});
+
+test("C-14 style registry exposes editorial and darktech", () => {
+  assert.deepEqual(list(), ["clinical", "minimal", "editorial", "darktech"]);
+});
+
+test("C-14 editorial and darktech body contrast passes 4.5", () => {
+  const editorial = get("editorial").css;
+  assert.ok(contrast(token(editorial, "--hs-ink"), token(editorial, "--hs-bg")) >= 4.5, "editorial light contrast");
+  assert.ok(contrast(token(editorial, "--hs-ink", true), token(editorial, "--hs-bg", true)) >= 4.5, "editorial dark contrast");
+
+  const darktech = get("darktech").css;
+  assert.ok(contrast(token(darktech, "--hs-ink"), token(darktech, "--hs-bg")) >= 4.5, "darktech contrast");
+  assert.match(composePage({ title: "Dark", faithfulHtml: "<p>正文</p>", style: "darktech" }).html, /color-scheme: dark;/);
+});
+
+test("C-14 all style and template combinations render without external resources", () => {
+  const templates = ["generic", "meeting", "proposal", "tutorial", "release"];
+  const sectionByTemplate = {
+    generic: [{ slot: "body", html: "<p>正文内容足够长，正文内容足够长。</p>" }],
+    meeting: [{ slot: "conclusions", html: "<p>结论内容足够长，结论内容足够长。</p>" }],
+    proposal: [{ slot: "summary", html: "<p>摘要内容足够长，摘要内容足够长。</p>" }],
+    tutorial: [{ slot: "overview", html: "<p>概览内容足够长，概览内容足够长。</p>" }],
+    release: [{ slot: "highlights", html: "<p>亮点内容足够长，亮点内容足够长。</p>" }]
+  };
+
+  for (const style of list()) {
+    for (const template of templates) {
+      const { html, mode, validation } = composePage({
+        title: `${template}-${style}`,
+        faithfulHtml: "<p>原文内容足够长，原文内容足够长，原文内容足够长。</p>",
+        enhanced: {
+          version: 1,
+          template,
+          style,
+          title: `${template}-${style}`,
+          tldr: ["组合渲染正常"],
+          sections: sectionByTemplate[template]
+        }
+      });
+      assert.equal(mode, "dual", `${template}/${style}`);
+      assert.equal(validation.ok, true, `${template}/${style}`);
+      assert.doesNotMatch(html, /https?:\/\//);
+      assert.doesNotMatch(html, /@import|url\(/);
+      assert.match(html, new RegExp(`data-hs-style="${style}"`));
+    }
+  }
 });
