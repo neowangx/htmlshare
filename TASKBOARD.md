@@ -55,4 +55,6 @@
 （每个里程碑出口回归通过后在此追加一行）
 
 - M0 地基：2026-07-04 达成。证据：`npm test` 通过（26 tests）；目录结构对齐 docs/03 §5；`git log` 含 C-01/C-02/C-03；运行路径隔离检查，代码/配置默认路径为 `htmlshare`，无 mdshare 路径残留。
+- M1 MVP 自托管闭环：2026-07-05 可自证项达成。证据：U-03 原型门禁已由用户确认并写入 docs/00；C-04~C-07/P-01/S-01~S-03/S-05/K-01 全部 done；`npm test` 通过（73 tests）；人工项待验：H14 Claude Code 实测话术与 H3 真机自托管联调。
 - M2 静态平台 + 多 agent：2026-07-04 可自证项达成。证据：C-08/C-09/P-02/P-03/P-04/S-04/K-02/K-03/K-04 全部 done；`npm test` 通过（102 tests）；`docker build` + selfhost 容器 `/healthz` 冒烟通过；install.sh 干净 HOME 沙箱幂等安装通过；人工项待验：H1/H2/H3/H4 真实目标/agent 联调。
+- M3 模板风格完备：2026-07-05 达成。证据：C-10~C-15/K-05 全部 done；5 模板 × 4 风格组合冒烟、docs/05 样例 A/B/C rubric 判定、风格对比度断言均已纳入测试；开源仓 `npm test` 通过（151 tests）；人工项待验：H16/H17/H18 视觉与版式走查。
