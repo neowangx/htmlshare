@@ -1,32 +1,34 @@
 import { escapeHtml } from "./convert.js";
 import { sanitizeEnhanced } from "./lib/sanitize.js";
 import { get as getTemplate, TEMPLATE_SLOTS } from "./templates/registry.js";
+import { get as getStyle, list as listStyles } from "./styles/registry.js";
 
 const TEMPLATES = TEMPLATE_SLOTS;
 
-const STYLES = new Set(["clinical", "minimal", "editorial", "darktech"]);
+const STYLES = new Set([...listStyles(), "editorial", "darktech"]);
 
-const BASE_CSS = `
-:root { color-scheme: light; --bg:#f7f8fb; --ink:#172033; --muted:#657189; --line:#dfe5ee; --panel:#ffffff; --accent:#2864d8; }
+const STRUCTURE_CSS = `
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.65 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+body { margin: 0; background: var(--hs-bg); color: var(--hs-ink); font: 16px/1.65 var(--hs-font-body); }
 main { width: min(960px, calc(100% - 32px)); margin: 40px auto; }
-.hs-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--line); padding-bottom: 16px; margin-bottom: 24px; }
+.hs-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--hs-line); padding-bottom: 16px; margin-bottom: 24px; }
 h1 { font-size: 28px; line-height: 1.2; margin: 0; letter-spacing: 0; }
-#hs-toggle { display: inline-flex; gap: 4px; border: 1px solid var(--line); border-radius: 8px; padding: 4px; background: var(--panel); }
-#hs-toggle button { border: 0; border-radius: 6px; padding: 6px 10px; background: transparent; color: var(--muted); cursor: pointer; font: inherit; }
-#hs-toggle button[aria-pressed="true"] { background: var(--accent); color: #fff; }
-.hs-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; }
-.hs-tldr { margin: 0 0 20px; padding: 16px 18px; border-left: 4px solid var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+#hs-toggle { display: inline-flex; gap: 4px; border: 1px solid var(--hs-line); border-radius: var(--hs-radius-control); padding: 4px; background: var(--hs-panel); }
+#hs-toggle button { border: 0; border-radius: calc(var(--hs-radius-control) - 2px); padding: 6px 10px; background: transparent; color: var(--hs-muted); cursor: pointer; font: inherit; transition: background 120ms ease-out, color 120ms ease-out; }
+#hs-toggle button[aria-pressed="true"] { background: var(--hs-accent); color: var(--hs-accent-ink); }
+.hs-panel { background: var(--hs-panel); border: 1px solid var(--hs-line); border-radius: var(--hs-radius-card); padding: 24px; box-shadow: var(--hs-shadow-card); }
+.hs-tldr { margin: 0 0 20px; padding: 16px 18px; border-left: 4px solid var(--hs-accent); background: var(--hs-accent-soft); }
 .hs-tldr h2, .hs-section h2 { font-size: 16px; margin: 0 0 10px; letter-spacing: 0; }
 .hs-tldr ul { margin: 0; padding-left: 20px; }
-.hs-section + .hs-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line); }
-.hs-footer { margin-top: 22px; color: var(--muted); font-size: 13px; }
+.hs-section + .hs-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--hs-line); }
+.hs-footer { margin-top: 22px; color: var(--hs-muted); font-size: 13px; }
 table { border-collapse: collapse; width: 100%; }
-th, td { border: 1px solid var(--line); padding: 6px 8px; }
-pre { overflow: auto; padding: 12px; background: #111827; color: #f9fafb; border-radius: 6px; }
+th, td { border: 1px solid var(--hs-line); padding: 6px 8px; }
+pre { overflow: auto; padding: 12px; background: var(--hs-code-bg); color: var(--hs-code-ink); border-radius: var(--hs-radius-control); }
+code { font-family: var(--hs-font-code); }
 img { max-width: 100%; height: auto; }
 @media print { #hs-toggle { display: none; } details:not([open]) > * { display: block; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
 `;
 
 const TOGGLE_JS = `
@@ -153,7 +155,11 @@ function renderToggle(hasEnhanced) {
   return `<div id="hs-toggle" role="group" aria-label="视图切换"><button type="button" data-view="faithful" aria-pressed="false">原文</button><button type="button" data-view="enhanced" aria-pressed="true">增强</button></div>`;
 }
 
-export function composePage({ title, faithfulHtml, enhanced = null, footerBadge = true, directHtml = false } = {}) {
+function normalizeStyle(style) {
+  return style && style !== "auto" ? style : "clinical";
+}
+
+export function composePage({ title, faithfulHtml, enhanced = null, footerBadge = true, directHtml = false, style = "clinical" } = {}) {
   if (directHtml) {
     return { html: String(faithfulHtml || ""), mode: "direct", validation: { ok: false, warnings: [], errors: [] } };
   }
@@ -161,6 +167,8 @@ export function composePage({ title, faithfulHtml, enhanced = null, footerBadge 
   const validation = validateEnhanced(enhanced, faithfulHtml);
   const hasEnhanced = validation.ok;
   const pageTitle = escapeHtml((hasEnhanced ? validation.enhanced.title : title) || "Untitled");
+  const pageStyle = normalizeStyle(hasEnhanced ? validation.enhanced.style : style);
+  const styleCss = `${getStyle(pageStyle).css}\n${STRUCTURE_CSS}`;
   const enhancedBlock = hasEnhanced ? `<section id="hs-enhanced" class="hs-panel">${renderEnhancedBody(validation.enhanced)}</section>` : "";
   const faithfulHidden = hasEnhanced ? " hidden" : "";
   const footer = footerBadge ? `<footer class="hs-footer">made with htmlshare · 轻量访问码保护</footer>` : "";
@@ -173,9 +181,9 @@ export function composePage({ title, faithfulHtml, enhanced = null, footerBadge 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>${pageTitle}</title>
-<style>${BASE_CSS}</style>
+<style>${styleCss}</style>
 </head>
-<body>
+<body data-hs-style="${escapeHtml(pageStyle)}">
 <main>
 <header class="hs-topbar"><h1>${pageTitle}</h1>${renderToggle(hasEnhanced)}</header>
 ${enhancedBlock}

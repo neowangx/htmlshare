@@ -73,7 +73,8 @@ function htmlFromInput(absPath, flags, stderr, config) {
     title: flags.title || faithful.title,
     faithfulHtml: faithful.html,
     enhanced,
-    footerBadge: configFooter(config)
+    footerBadge: configFooter(config),
+    style: flags.style || config.defaults?.style || "clinical"
   });
   return { html: page.html, title: flags.title || faithful.title, directHtml: false };
 }

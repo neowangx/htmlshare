@@ -13,7 +13,7 @@
 | U-02 | M1 | 高保真原型包（02A §5 全覆盖） | U-01 | done | 生成 `prototype/` 高保真包，覆盖 docs/02A §5 14/14；可点击切换/门禁状态/极端数据齐全；`npm test` 通过（47 tests）。 |
 | U-03 | M1 | 客户确认门禁卡（阻塞全部界面实现卡） | U-02 | done | 用户确认 `prototype/index.html` 原型走查通过，结论已写入 docs/00 变更记录（2026-07-05）；D15 门禁解除。 |
 | C-05 | M1 | 模板骨架 + generic | C-04, U-03 | done | 新增 `src/templates/registry.js` 与 `src/templates/generic/`，compose 接入模板 registry；generic 槽位、非法模板枚举错误、确定性渲染快照均有测试；`npm test` 通过（119 tests）。 |
-| C-06 | M1 | 风格骨架 + clinical/minimal | C-05, U-03 | todo | |
+| C-06 | M1 | 风格骨架 + clinical/minimal | C-05, U-03 | done | 新增 `src/styles/registry.js` 与 clinical/minimal token CSS，compose 接入 style registry 并让 CLI defaults/--style 真正影响页面；覆盖内联零外链、深浅色、reduced-motion、正文对比度 ≥4.5；`npm test` 通过（124 tests）；人工项待验：H16 视觉走查。 |
 | P-01 | M1 | 适配器接口 + selfhost | C-03 | done | 实现 adapter registry/AdapterError/selfhost detect/publish/unpublish；mock HTTP 覆盖 Bearer/请求体/409/413/401；`npm test` 通过（53 tests），真实 server 联调按 S-05 补跑。 |
 | S-01 | M1 | 服务端移植改名 | C-01 | done | 实现 htmlshare selfhost 基础 server：POST /api/pages、门禁页、unlock、scrypt codeHash、`data/<id>/meta.json + v1.html`；`PORT=0 node server/server.js` 启动测试通过；`npm test` 通过（57 tests）。 |
 | S-02 | M1 | 门禁与限速完善 | S-01 | done | 补 unlock 内存滑窗限速、成功后 cookie 直通、Path/HttpOnly/SameSite/Max-Age 断言、跨 id 不串；`npm test` 通过（60 tests）。 |
