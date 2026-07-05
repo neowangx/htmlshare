@@ -31,7 +31,7 @@
 | K-03 | M2 | Codex 封装 | K-02 | done | 基于本机 codex-cli 0.142.5 与 `~/.codex/AGENTS.md` 约定生成 Codex 封装；安装器支持 marker 幂等注入；生成物与 SKILL.md 关键指令逐段对应；shellcheck 通过、`npm test` 通过（101 tests）；人工项待验：H4 Codex 真实发布。 |
 | K-04 | M2 | OpenClaw/Hermes 封装 | K-02 | done | 基于本机 Hermes Agent v0.18.0 与 `~/.hermes/skills`、`~/.openclaw/skills` 目录约定生成 SKILL.md 封装；安装器支持 symlink 落位；生成物与 SKILL.md 关键指令逐段对应；shellcheck 通过、`npm test` 通过（102 tests）；人工项待验：H4 OpenClaw/Hermes 真实发布。 |
 | C-10 | M3 | 模板 meeting | C-05, U-03 | done | 新增 meeting 专用模板 renderer：行动项 ≥3 条渲染负责人/事项/期限卡片组，discussion 默认 details 折叠，空 open_issues 不渲染标题，打印样式包含 details 展开规则；`npm test` 通过（128 tests）。 |
-| C-11 | M3 | 模板 proposal | C-05, U-03 | todo | |
+| C-11 | M3 | 模板 proposal | C-05, U-03 | done | 新增 proposal 专用模板 renderer：summary/problem/solution/plan/risks 槽位按序渲染，risks 仅在 ≥3 条结构化风险时表格化，否则保留原 HTML；`npm test` 通过（131 tests）。 |
 | C-12 | M3 | 模板 tutorial | C-05, U-03 | todo | |
 | C-13 | M3 | 模板 release | C-05, U-03 | todo | |
 | C-14 | M3 | 风格 editorial + darktech | C-06, U-03 | todo | |
