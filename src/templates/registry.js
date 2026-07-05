@@ -2,6 +2,7 @@ import * as generic from "./generic/index.js";
 import * as meeting from "./meeting/index.js";
 import * as proposal from "./proposal/index.js";
 import * as tutorial from "./tutorial/index.js";
+import * as release from "./release/index.js";
 import { AdapterError } from "../adapters/errors.js";
 
 export const TEMPLATE_SLOTS = Object.freeze({
@@ -32,7 +33,9 @@ const registry = new Map(templateNames.map((name) => [
         ? { name, slots: proposal.slots, render: proposal.render }
         : name === "tutorial"
           ? { name, slots: tutorial.slots, render: tutorial.render }
-          : sectionTemplate(name)
+          : name === "release"
+            ? { name, slots: release.slots, render: release.render }
+            : sectionTemplate(name)
 ]));
 
 export function list() {

@@ -33,7 +33,7 @@
 | C-10 | M3 | 模板 meeting | C-05, U-03 | done | 新增 meeting 专用模板 renderer：行动项 ≥3 条渲染负责人/事项/期限卡片组，discussion 默认 details 折叠，空 open_issues 不渲染标题，打印样式包含 details 展开规则；`npm test` 通过（128 tests）。 |
 | C-11 | M3 | 模板 proposal | C-05, U-03 | done | 新增 proposal 专用模板 renderer：summary/problem/solution/plan/risks 槽位按序渲染，risks 仅在 ≥3 条结构化风险时表格化，否则保留原 HTML；`npm test` 通过（131 tests）。 |
 | C-12 | M3 | 模板 tutorial | C-05, U-03 | done | 新增 tutorial 专用模板 renderer：overview/prerequisites/steps/faq 按序渲染，steps 保序编号，faq 自动转 details，代码块保持原样；`npm test` 通过（135 tests）。 |
-| C-13 | M3 | 模板 release | C-05, U-03 | todo | |
+| C-13 | M3 | 模板 release | C-05, U-03 | done | 新增 release 专用模板 renderer：highlights/changes/upgrade_notes 按序渲染，changes 支持新增/修复/破坏性/其他分组徽标，缺失 upgrade_notes 不渲染空标题；`npm test` 通过（138 tests）。 |
 | C-14 | M3 | 风格 editorial + darktech | C-06, U-03 | todo | |
 | C-15 | M3 | 高级设置 config | C-07 | done | 实现 `config show/target/selfhost/defaults`，show 脱敏 token 后 4 位；publish 读取 defaults 与 footerBadge；覆盖设置写入、脱敏、默认模板/风格/访问码生效；`npm test` 通过（106 tests）。 |
 | K-05 | M3 | SKILL.md 完整增强规则 | K-01, C-10~C-14 | todo | |

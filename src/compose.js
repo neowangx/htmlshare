@@ -34,6 +34,8 @@ img { max-width: 100%; height: auto; }
 .hs-action-owner { border: 1px solid var(--hs-line); border-radius: 999px; padding: 2px 8px; }
 .hs-steps li + li { margin-top: 8px; }
 .hs-faq-item + .hs-faq-item { margin-top: 10px; }
+.hs-change-group + .hs-change-group { margin-top: 14px; }
+.hs-change-badge { display: inline-flex; border: 1px solid var(--hs-line); border-radius: 999px; padding: 2px 8px; color: var(--hs-muted); font-size: 13px; }
 details > summary { cursor: pointer; }
 @media print { #hs-toggle { display: none; } details[open], details:not([open]) { display: block; } details:not([open]) > * { display: block; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
