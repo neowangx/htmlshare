@@ -32,6 +32,8 @@ img { max-width: 100%; height: auto; }
 .hs-action-card p { margin: 10px 0; }
 .hs-action-owner, .hs-action-due { display: inline-flex; color: var(--hs-muted); font-size: 13px; }
 .hs-action-owner { border: 1px solid var(--hs-line); border-radius: 999px; padding: 2px 8px; }
+.hs-steps li + li { margin-top: 8px; }
+.hs-faq-item + .hs-faq-item { margin-top: 10px; }
 details > summary { cursor: pointer; }
 @media print { #hs-toggle { display: none; } details[open], details:not([open]) { display: block; } details:not([open]) > * { display: block; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
