@@ -12,7 +12,7 @@
 | H3 | 自托管联调服务器确认（可用现有服务器起 server，凭据见 `~/.claude/infrastructure.md`） | S-04 真机验收 | M2 | agent 可自行部署，但需确认允许使用哪台 |
 | H4 | Codex / OpenClaw / Hermes 各实测一次发布 | K-03/K-04 人工联调项 | M2 末 | 各约 5 分钟 |
 | H5 | 4 风格 × 门禁页视觉走查 | C-06/C-14/G-04 人工项 | M4 前 | 浏览器过一遍 examples 产出 |
-| H6 | GitHub 仓库归属确认（Q4；gh CLI 已登录则 agent 可代建） | G-02 | M4 | 推荐个人账号 `htmlshare` |
+| H6 | GitHub 仓库归属确认（Q4；gh CLI 已登录则 agent 可代建） | G-02 | M4 | 已完成：用户确认并已创建 `neowangx/htmlshare` 私有仓库，main CI 通过 |
 | H7 | 云服务域名购买 + 备案/境外路线决策（Q1，与 docs/10 §2 备案风险绑定） | V-06 | M5 | 未定前 V 系列照常开发，仅上线卡冻结 |
 | H8 | SMTP 服务开通（推荐 Resend 免费层，提供 SMTP_URL） | V-02 真实邮件（开发用 outbox 不阻塞） | V-06 前 | 5 分钟注册 |
 | H9 | 支付渠道拍板（Q2：Stripe 或国内过渡方案）+ 账号开通 | V-07（截止点守卫） | M5 末 | 已确认首发采用微信收款 + 手动开通过渡方案；若后续要自动化订阅，再补商户能力 |
@@ -30,3 +30,4 @@
 | H16 | C-06 clinical/minimal 两风格真实浏览器视觉走查：检查增强页/忠实页、深浅色、自适应宽度、开关与 reduced-motion 体验是否贴近 `prototype/index.html` 黄金标杆 | C-06 人工视觉项；后续 C-14/G-04 视觉项参考 | M4 前 | 自证项已通过（124 tests）；等待人工浏览器视觉确认 |
 | H17 | C-14 editorial/darktech 两风格真实浏览器视觉走查：重点检查 editorial 长文排版、darktech 深色可读性，以及 4 风格 × 5 模板组合是否贴近 `prototype/index.html` 黄金标杆 | C-14/G-04 人工视觉项 | M4 前 | 自证项已通过（141 tests）；等待人工浏览器视觉确认 |
 | H18 | K-05 docs/05 样例 A/B/C 的增强版式质量人工走查：重点看会议行动项、教程步骤、无结构随笔三类增强页是否读起来顺、没有过度组件化 | K-05/G-04 人工版式项 | M4 前 | template 判定与 CLI 校验已自证通过（145 tests）；版式审美质量等待人工确认 |
+| H19 | GitHub 公开发布/分支保护决策：当前 `neowangx/htmlshare` 是 private，GitHub 返回 403 表示 private 仓启用 branch protection 需要 GitHub Pro；v0.1.0 公开 Release 前需确认改 public 或升级 Pro | G-04 | v0.1.0 发布前 | 已完成私有仓推送与 main CI；待确认是否公开仓库或升级 Pro 后再做 release/branch protection |

@@ -37,10 +37,10 @@
 | C-14 | M3 | 风格 editorial + darktech | C-06, U-03 | done | 新增 editorial/darktech 两套 token 风格，style registry 补齐 4 枚举；覆盖 editorial/darktech 对比度、零外链与 4 风格 × 5 模板组合冒烟；`npm test` 通过（141 tests）；人工项待验：H5/H17 视觉走查。 |
 | C-15 | M3 | 高级设置 config | C-07 | done | 实现 `config show/target/selfhost/defaults`，show 脱敏 token 后 4 位；publish 读取 defaults 与 footerBadge；覆盖设置写入、脱敏、默认模板/风格/访问码生效；`npm test` 通过（106 tests）。 |
 | K-05 | M3 | SKILL.md 完整增强规则 | K-01, C-10~C-14 | done | 将 docs/05 §2~§4/§6 完整落入主 `SKILL.md`，并重生成 Codex/OpenClaw/Hermes 封装；新增 docs/05 样例 A/B/C 固定资产与 template 判定断言、docs/04 §8 枚举 diff 断言；`npm test` 通过（145 tests）；人工项待验：H18 版式质量走查。 |
-| G-02 | M4 | GitHub 仓库与 CI（CI 可 M1 后早启） | C-01; Q4 | doing | Q4 已确认使用 GitHub 账号 `neowangx` 下私有仓库 `htmlshare`；正在创建私有远端、推送并启用 CI。 |
+| G-02 | M4 | GitHub 仓库与 CI（CI 可 M1 后早启） | C-01; Q4 | done | 已创建 GitHub 私有仓库 `neowangx/htmlshare`，默认分支 `main`；推送当前仓库并加入 Actions CI（Node 20/22），`gh run watch 28874002338` 确认 main CI 成功；远端检查确认 `../htmlshare-cloud` 未配置 remote、未随公开仓泄漏；分支保护因 GitHub 私有仓需 Pro/公开仓返回 403，见 H19。 |
 | G-01 | M4 | README 与文档 | K-05 | done | 新增中英双语 README、server/README、自证概览图 `examples/screenshots/overview.svg`；README 明确官方云服务端不开源、默认 100MB 免费空间、访问码非强安全；新增 README doctest/死链/声明断言；`npm test` 通过（148 tests）。 |
 | G-03 | M4 | examples 一键体验 | G-01 | done | 新增 `scripts/build-examples.js`，生成 docs/05 样例 A/B/C 源文件与 4 个风格代表 HTML（clinical/darktech/minimal/editorial）及 `examples/README.md`；覆盖构建幂等、HTML 单文件零外部资源、索引链接可达；`npm test` 通过（151 tests）。 |
-| G-04 | M4 | v0.1.0 发布 | G-01, G-02, G-03 | blocked | 依赖 G-02；当前受 Q4 GitHub 归属与仓库名确认冻结，见 NEEDS_HUMAN H6。 |
+| G-04 | M4 | v0.1.0 发布 | G-01, G-02, G-03 | blocked | 当前仓库按用户要求保持 private；v0.1.0 公开发布与 main 分支保护需确认是否公开仓库或升级 GitHub Pro，见 NEEDS_HUMAN H19。 |
 | V-01 | M5 | 私有仓初始化 + 多租户模型 | S-03 | done | 初始化兄弟私有仓 `../htmlshare-cloud`（git commit `05d9202`），复制开源 server 契约测试原样通过，新增 better-sqlite3 索引层 users/pages/versions/usage_events 与文件系统一致性断言；云仓 `npm test` 通过（15 tests）。 |
 | V-02 | M5 | 设备码登录 | V-01 | done | 在 `../htmlshare-cloud` 实现设备码登录（commit `a00ab2c`）：/api/auth/device、/api/auth/token、/activate 邮箱验证码 outbox、一次性 token 与 token_hash 存储，上传端点接受用户 Bearer；云仓 `npm test` 通过（18 tests）。 |
 | V-03 | M5 | 配额与用量 | V-02 | done | 在 `../htmlshare-cloud` 实现配额与用量（commit `ae32114`）：用户 token 发布归属、/api/me、free/pro env 限制、页数/体积拦截、删除释放配额、view usage_events；云仓 `npm test` 通过（21 tests）。 |
