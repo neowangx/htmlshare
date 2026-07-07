@@ -95,12 +95,13 @@ Style selection, unless the user configured or requested a style:
 
 Content rules:
 
-- TL;DR must contain 1 to 5 items. Choose what the reader most needs to take away: conclusions first, then actions, then key data. Keep each item short, preferably 40 Chinese characters or fewer.
+- TL;DR must contain 1 to 5 items. Choose what the reader most needs to take away: conclusions first, then actions, then key data. Each item MUST be 40 characters or fewer (the CLI truncates longer items and warns).
 - Fill only slots that have source content. Omit empty slots; never invent material to fill a slot.
 - Use `<details>` only for process/background/raw/appendix content. Never hide primary conclusions, actions, risks, upgrade steps, or required instructions.
 - Use card groups only when there are at least 3 similar items.
 - Use tables only when the source has real two-dimensional data. Do not force prose into a table.
-- For meeting/proposal action items, extract owner, task, and deadline. If missing, write `未指定`; do not guess.
+- For meeting/proposal action items, extract owner, task, and deadline and join them with a full-width pipe `｜` in that order inside each `<li>`, e.g. `<li>Alice｜提交预算方案｜周五前</li>`. The CLI splits on `｜` to render the owner/task/deadline card; a list item without pipes renders as task-only with owner/deadline shown as `未指定`. If a field is genuinely missing, write `未指定`; do not guess.
+- For tutorial FAQ items, join question and answer with `｜`, e.g. `<li>如何回滚？｜执行 rollback 命令</li>`. For release change items, prefix with a label and separator so they group, e.g. `修复：登录失败` or `Fixed: login bug`.
 
 ## Failure Fallbacks
 

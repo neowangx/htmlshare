@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
-import { basename, extname } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { basename, dirname, extname, resolve } from "node:path";
 
 import MarkdownIt from "markdown-it";
 import anchor from "markdown-it-anchor";
@@ -67,19 +67,64 @@ export function escapeHtml(value) {
   return value.replace(/[&<>"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" })[char]);
 }
 
-export function convertFaithful(md, fallbackTitle = "Untitled") {
+// D12: output must be self-contained. Inline local images referenced by relative path as
+// data: URIs; leave remote/data URIs alone; warn (and keep as a link) when a file is missing
+// or exceeds the per-image cap so the page never silently ships a broken/huge asset.
+const MAX_INLINE_IMAGE_BYTES = 2 * 1024 * 1024;
+const IMAGE_MIME = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".webp": "image/webp"
+};
+
+function inlineLocalImages(html, baseDir, warnings) {
+  if (!baseDir) return html;
+  return html.replace(/<img\b[^>]*?\bsrc="([^"]*)"[^>]*>/gi, (tag, src) => {
+    if (!src || /^(?:https?:|data:|mailto:|\/\/)/i.test(src)) return tag;
+    let relative;
+    try {
+      relative = decodeURI(src.split(/[?#]/)[0]);
+    } catch {
+      return tag;
+    }
+    const abs = resolve(baseDir, relative);
+    const ext = extname(abs).toLowerCase();
+    const mime = IMAGE_MIME[ext];
+    if (!mime) {
+      warnings.push(`IMAGE: unsupported type left as link: ${src}`);
+      return tag;
+    }
+    if (!existsSync(abs)) {
+      warnings.push(`IMAGE: file not found, left as link: ${src}`);
+      return tag;
+    }
+    const bytes = readFileSync(abs);
+    if (bytes.length > MAX_INLINE_IMAGE_BYTES) {
+      warnings.push(`IMAGE: ${(bytes.length / 1024 / 1024).toFixed(1)}MB exceeds ${MAX_INLINE_IMAGE_BYTES / 1024 / 1024}MB, left as link: ${src}`);
+      return tag;
+    }
+    const dataUri = `data:${mime};base64,${bytes.toString("base64")}`;
+    return tag.replace(`src="${src}"`, `src="${dataUri}"`);
+  });
+}
+
+export function convertFaithful(md, fallbackTitle = "Untitled", { baseDir = null } = {}) {
   const source = String(md ?? "");
   const headings = extractHeadings(source);
-  const html = sanitizeFaithful(buildMarkdown().render(source));
+  const warnings = [];
+  const html = inlineLocalImages(sanitizeFaithful(buildMarkdown().render(source)), baseDir, warnings);
 
   return {
     html,
     title: headings.find((item) => item.level === 1)?.text || fallbackTitle,
-    headings
+    headings,
+    warnings
   };
 }
 
 export function convertFile(mdPath) {
   const md = readFileSync(mdPath, "utf8");
-  return convertFaithful(md, basename(mdPath, extname(mdPath)));
+  return convertFaithful(md, basename(mdPath, extname(mdPath)), { baseDir: dirname(mdPath) });
 }

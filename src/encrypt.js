@@ -20,11 +20,11 @@ function deriveKey(code, salt, iter = KDF_ITERATIONS) {
 }
 
 function vaultJson(vault) {
-  return JSON.stringify(vault);
-}
-
-function escapeHtml(value) {
-  return value.replace(/[&<>"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" })[char]);
+  // Embedded in a raw-text <script> element: HTML entities are NOT decoded there,
+  // so escaping " as &quot; would corrupt JSON.parse. The only sequence that can break
+  // out of the element is a literal `</script`, so neutralize `<` via a JS-string-safe
+  // unicode escape (valid inside JSON, harmless to JSON.parse).
+  return JSON.stringify(vault).replace(/</g, "\\u003c");
 }
 
 function shell(vault) {
@@ -51,7 +51,7 @@ function shell(vault) {
     <p class="error-text" id="hs-error"></p>
   </form>
 </main>
-<script type="application/json" id="hs-vault">${escapeHtml(vaultJson(vault))}</script>
+<script type="application/json" id="hs-vault">${vaultJson(vault)}</script>
 <script>
 const form=document.querySelector("#hs-form"),input=document.querySelector("#hs-code"),gate=document.querySelector("#hs-gate"),err=document.querySelector("#hs-error");
 function clean(v){return v.replace(/-/g,"").trim().toUpperCase()}

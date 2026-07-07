@@ -1,10 +1,15 @@
-import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
 
 import { hashCode } from "./code.js";
 
 const ID_ALPHABET = "abcdefghijkmnpqrstuvwxyz23456789";
+const ID_PATTERN = /^[a-z0-9]{6}$/;
+
+export function isValidId(id) {
+  return typeof id === "string" && ID_PATTERN.test(id);
+}
 
 export function newId() {
   const bytes = randomBytes(6);
@@ -60,6 +65,13 @@ function pruneVersions(dataDir, meta, retainVersions = 20) {
 }
 
 export function createPage(dataDir, { id = null, title = "Untitled", html, code = null, meta = {} }) {
+  // Never derive a filesystem path from an unvalidated client id — reject anything that
+  // isn't exactly the 6-char id shape, closing the `../` path-traversal write (B4).
+  if (id != null && !isValidId(id)) {
+    const error = new Error("invalid id");
+    error.code = "INVALID_INPUT";
+    throw error;
+  }
   const pageId = id || newId();
   if (existsSync(metaPath(dataDir, pageId))) {
     const error = new Error("id conflict");
@@ -91,7 +103,7 @@ export function updatePage(dataDir, id, { title, html, code, meta = {} }, { reta
   existing.version = nextVersion;
   existing.title = title ?? existing.title;
   existing.meta = { ...(existing.meta || {}), ...meta };
-  if (Object.hasOwn({ code }, "code") && code !== undefined) {
+  if (code !== undefined) {
     existing.codeHash = code ? hashCode(code) : null;
   }
   existing.updatedAt = version.at;
@@ -106,4 +118,29 @@ export function deletePage(dataDir, id, { now = new Date().toISOString() } = {})
   existing.deletedAt = now;
   existing.updatedAt = now;
   return writeMeta(dataDir, existing);
+}
+
+// Contract §6.1: soft-deleted pages are physically removed after a grace window (default
+// 7 days). Meant to be called periodically (and once at startup); safe to run repeatedly.
+export function purgeDeleted(dataDir, { now = Date.now(), graceMs = 7 * 24 * 60 * 60 * 1000 } = {}) {
+  let removed = 0;
+  let entries;
+  try {
+    entries = readdirSync(dataDir, { withFileTypes: true });
+  } catch {
+    return 0;
+  }
+  for (const entry of entries) {
+    if (!entry.isDirectory() || !isValidId(entry.name)) continue;
+    const meta = getMeta(dataDir, entry.name);
+    if (!meta || !meta.deletedAt) continue;
+    if (now - Date.parse(meta.deletedAt) < graceMs) continue;
+    try {
+      rmSync(pageDir(dataDir, entry.name), { recursive: true, force: true });
+      removed += 1;
+    } catch {
+      // Best-effort; next sweep retries.
+    }
+  }
+  return removed;
 }

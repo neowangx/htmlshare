@@ -33,7 +33,8 @@ const ALLOWED_TAGS = [
   "details",
   "summary",
   "mark",
-  "button"
+  "button",
+  "nav"
 ];
 
 const ALLOWED_CLASSES = {
@@ -42,7 +43,8 @@ const ALLOWED_CLASSES = {
   details: ["collapse"],
   button: ["tab"],
   mark: ["hl"],
-  span: ["hl"]
+  span: ["hl"],
+  nav: ["table-of-contents"]
 };
 
 const FAITHFUL_CLASSES = {
@@ -53,7 +55,16 @@ const FAITHFUL_CLASSES = {
 
 const BASE_OPTIONS = {
   allowedTags: ALLOWED_TAGS,
-  allowedAttributes: { a: ["href"], img: ["src", "alt"], "*": ["class"] },
+  // id on headings/nav so markdown-it-anchor heading ids and toc-done-right <nav> anchors
+  // survive — without them every [[toc]] / heading link is a dead fragment. id carries no
+  // script vector; only these structural tags get it.
+  allowedAttributes: {
+    a: ["href"],
+    img: ["src", "alt"],
+    h1: ["id"], h2: ["id"], h3: ["id"], h4: ["id"], h5: ["id"], h6: ["id"],
+    nav: ["id"],
+    "*": ["class"]
+  },
   allowedSchemes: [],
   allowedSchemesByTag: { a: ["http", "https", "mailto"], img: ["data"] },
   allowProtocolRelative: false,

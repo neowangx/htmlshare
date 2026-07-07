@@ -7,6 +7,7 @@ import { ensureSiteRoot, newShareId, removeShare, siteDir, writeShare } from "..
 const execFileAsync = promisify(nodeExecFile);
 
 export const name = "vercel";
+export const gate = "static";
 
 function projectName(config) {
   return config?.vercel?.project || "htmlshare-pages";
@@ -16,21 +17,23 @@ function dataDir(config) {
   return config?.siteDataDir;
 }
 
-function parseDeployUrl(stdout) {
-  const matches = String(stdout).match(/https:\/\/[^\s]+/g);
-  return matches ? matches[matches.length - 1] : null;
+// D8: the shared link must be stable across re-deploys, so derive it from the fixed
+// project's production domain — never from `vercel deploy` stdout, whose URL carries a
+// per-deploy hash and would change every publish.
+function productionBase(config) {
+  const explicit = config?.vercel?.url;
+  if (explicit) return String(explicit).replace(/\/+$/, "");
+  return `https://${projectName(config)}.vercel.app`;
 }
 
 export function createVercelAdapter({ execFile = execFileAsync } = {}) {
   async function deploy(root) {
-    const { stdout } = await execFile("npx", ["vercel", "deploy", "--prod", "--yes"], { cwd: root });
-    const url = parseDeployUrl(stdout);
-    if (!url) throw new AdapterError("INTERNAL", "Unable to parse Vercel deployment URL");
-    return url;
+    await execFile("npx", ["vercel", "deploy", "--prod", "--yes"], { cwd: root });
   }
 
   return {
     name,
+    gate,
     async detect() {
       try {
         await execFile("npx", ["vercel", "whoami"]);
@@ -46,8 +49,8 @@ export function createVercelAdapter({ execFile = execFileAsync } = {}) {
       ensureSiteRoot(root);
       writeShare(root, shareId, html);
       try {
-        const deployUrl = await deploy(root);
-        return { id: shareId, url: `${deployUrl.replace(/\/+$/, "")}/s/${shareId}/` };
+        await deploy(root);
+        return { id: shareId, url: `${productionBase(config)}/s/${shareId}/` };
       } catch (error) {
         if (error instanceof AdapterError) throw error;
         throw new AdapterError("INTERNAL", error.message, { cause: error });

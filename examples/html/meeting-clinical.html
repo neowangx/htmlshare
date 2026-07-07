@@ -63,6 +63,12 @@ table { border-collapse: collapse; width: 100%; }
 th, td { border: 1px solid var(--hs-line); padding: 6px 8px; }
 pre { overflow: auto; padding: 12px; background: var(--hs-code-bg); color: var(--hs-code-ink); border-radius: var(--hs-radius-control); }
 code { font-family: var(--hs-font-code); }
+.hljs-comment, .hljs-quote { color: var(--hs-muted); font-style: italic; }
+.hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-name, .hljs-tag { color: var(--hs-accent); }
+.hljs-string, .hljs-attr, .hljs-symbol, .hljs-number, .hljs-literal, .hljs-meta { color: var(--hs-code-accent, var(--hs-accent)); }
+.hljs-title, .hljs-section, .hljs-type, .hljs-function .hljs-title { color: var(--hs-code-ink); font-weight: 600; }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 700; }
 img { max-width: 100%; height: auto; }
 .hs-action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
 .hs-action-card { border: 1px solid var(--hs-line); border-radius: var(--hs-radius-card); padding: 14px; background: var(--hs-panel-subtle); }
@@ -74,7 +80,7 @@ img { max-width: 100%; height: auto; }
 .hs-change-group + .hs-change-group { margin-top: 14px; }
 .hs-change-badge { display: inline-flex; border: 1px solid var(--hs-line); border-radius: 999px; padding: 2px 8px; color: var(--hs-muted); font-size: 13px; }
 details > summary { cursor: pointer; }
-@media print { #hs-toggle { display: none; } details[open], details:not([open]) { display: block; } details:not([open]) > * { display: block; } }
+@media print { #hs-toggle { display: none; } details { display: block; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
 </style>
 </head>
@@ -82,30 +88,42 @@ details > summary { cursor: pointer; }
 <main>
 <header class="hs-topbar"><h1>Q3 产品评审会议纪要</h1><div id="hs-toggle" role="group" aria-label="视图切换"><button type="button" data-view="faithful" aria-pressed="false">原文</button><button type="button" data-view="enhanced" aria-pressed="true">增强</button></div></header>
 <section id="hs-enhanced" class="hs-panel"><div class="hs-tldr"><h2>TL;DR</h2><ul><li>Q3 主推团队协作仪表盘</li><li>灰度名单 7 月 12 日前完成</li><li>预算上限 8 万元</li></ul></div><section class="hs-section" data-slot="conclusions"><h2>结论</h2><ul><li>决定 Q3 主推团队协作仪表盘，先覆盖销售和客服两个团队。</li><li>决定 7 月 12 日前完成灰度名单，由 Ada 负责。</li><li>决定预算上限为 8 万元，不新增外包。</li></ul></section><section class="hs-section" data-slot="actions"><h2>行动项</h2><div class="hs-action-grid"><article class="hs-action-card"><span class="hs-action-owner">Ada</span><p>整理灰度名单</p><span class="hs-action-due">2026-07-12</span></article><article class="hs-action-card"><span class="hs-action-owner">周宁</span><p>输出埋点清单</p><span class="hs-action-due">2026-07-10</span></article><article class="hs-action-card"><span class="hs-action-owner">李想</span><p>准备客户访谈问题</p><span class="hs-action-due">2026-07-09</span></article><article class="hs-action-card"><span class="hs-action-owner">小林</span><p>更新发布节奏表</p><span class="hs-action-due">2026-07-08</span></article></div></section><section class="hs-section" data-slot="discussion"><h2>讨论过程</h2><details><summary>讨论记录</summary><p>议题一：销售团队需要看线索响应时长，客服团队更关心升级工单数量。大家同意第一版只做共用指标，不做复杂权限。</p><p>议题二：周宁提醒埋点缺口较大，需要先补事件上报。Ada 认为灰度团队不要超过 20 人，避免支持压力过高。</p><p>议题三：李想建议把客户访谈放在灰度前一周完成，会议同意。</p></details></section></section>
-<section id="hs-faithful" class="hs-panel" hidden><h1>Q3 产品评审会议纪要</h1>
+<section id="hs-faithful" class="hs-panel" hidden><h1 id="q3-%E4%BA%A7%E5%93%81%E8%AF%84%E5%AE%A1%E4%BC%9A%E8%AE%AE%E7%BA%AA%E8%A6%81">Q3 产品评审会议纪要</h1>
 <p>时间：2026-07-05 10:00
 地点：线上会议
 与会人：小林、Ada、周宁、李想</p>
-<h2>决议</h2>
+<h2 id="%E5%86%B3%E8%AE%AE">决议</h2>
 <ul>
 <li>决定 Q3 主推团队协作仪表盘，先覆盖销售和客服两个团队。</li>
 <li>决定 7 月 12 日前完成灰度名单，由 Ada 负责。</li>
 <li>决定预算上限为 8 万元，不新增外包。</li>
 </ul>
-<h2>行动项</h2>
+<h2 id="%E8%A1%8C%E5%8A%A8%E9%A1%B9">行动项</h2>
 <ul>
 <li>Ada | 整理灰度名单 | 2026-07-12</li>
 <li>周宁 | 输出埋点清单 | 2026-07-10</li>
 <li>李想 | 准备客户访谈问题 | 2026-07-09</li>
 <li>小林 | 更新发布节奏表 | 2026-07-08</li>
 </ul>
-<h2>讨论记录</h2>
+<h2 id="%E8%AE%A8%E8%AE%BA%E8%AE%B0%E5%BD%95">讨论记录</h2>
 <p>议题一：销售团队需要看线索响应时长，客服团队更关心升级工单数量。大家同意第一版只做共用指标，不做复杂权限。</p>
 <p>议题二：周宁提醒埋点缺口较大，需要先补事件上报。Ada 认为灰度团队不要超过 20 人，避免支持压力过高。</p>
 <p>议题三：李想建议把客户访谈放在灰度前一周完成，会议同意。</p></section>
 <footer class="hs-footer">made with htmlshare · 轻量访问码保护</footer>
 </main>
 <script>
+(() => {
+  let opened = [];
+  addEventListener("beforeprint", () => {
+    opened = [...document.querySelectorAll("details:not([open])")];
+    for (const el of opened) el.open = true;
+  });
+  addEventListener("afterprint", () => {
+    for (const el of opened) el.open = false;
+    opened = [];
+  });
+})();
+
 (() => {
   const toggle = document.querySelector("#hs-toggle");
   if (!toggle) return;

@@ -1,20 +1,21 @@
 import http from "node:http";
+import { timingSafeEqual } from "node:crypto";
 
 import { signSession, parseCookies, verifySession } from "./lib/cookie.js";
 import { verifyCode } from "./lib/code.js";
 import { gatePage } from "./lib/pages.js";
 import { createUnlockLimiter } from "./lib/ratelimit.js";
-import { createPage, deletePage, getLatestHtml, getMeta, updatePage } from "./lib/store.js";
+import { createPage, deletePage, getLatestHtml, getMeta, purgeDeleted, updatePage } from "./lib/store.js";
 
 const COOKIE_TTL_SECONDS = 86400;
 
 function json(res, status, body) {
-  res.writeHead(status, { "content-type": "application/json; charset=utf-8" });
+  res.writeHead(status, { "content-type": "application/json; charset=utf-8", "x-content-type-options": "nosniff" });
   res.end(JSON.stringify(body));
 }
 
 function html(res, status, body, headers = {}) {
-  res.writeHead(status, { "content-type": "text/html; charset=utf-8", ...headers });
+  res.writeHead(status, { "content-type": "text/html; charset=utf-8", "x-content-type-options": "nosniff", ...headers });
   res.end(body);
 }
 
@@ -53,17 +54,37 @@ async function readUnlockCode(req) {
 }
 
 function authorized(req, token) {
-  return (req.headers.authorization || "") === `Bearer ${token}`;
+  const provided = req.headers.authorization || "";
+  const expected = `Bearer ${token}`;
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  // Constant-time compare so the upload token can't be recovered by timing (S3).
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+function clientIp(req, trustProxy) {
+  if (trustProxy) {
+    const forwarded = req.headers["x-forwarded-for"];
+    if (forwarded) return String(forwarded).split(",")[0].trim();
+  }
+  return req.socket.remoteAddress || "unknown";
 }
 
 export function createServer(options = {}) {
   const dataDir = options.dataDir || process.env.DATA_DIR || "./data";
   const token = options.token ?? process.env.UPLOAD_TOKEN;
   const publicBase = (options.publicBase || process.env.PUBLIC_BASE || "").replace(/\/+$/, "");
-  const secret = options.secret || process.env.SESSION_SECRET || "htmlshare-dev-secret";
+  const secret = options.secret || process.env.SESSION_SECRET;
+  if (!secret) {
+    // No public default: a shared default secret lets anyone forge a session cookie and
+    // bypass the access-code gate on every deployment (B3).
+    throw new Error("SESSION_SECRET is required");
+  }
   const maxPageBytes = options.maxPageBytes ?? (Number(process.env.MAX_PAGE_MB || 20) * 1024 * 1024);
   const unlockLimit = Number(options.unlockRateLimit || process.env.UNLOCK_RATE_LIMIT || 5);
   const retainVersions = Number(options.retainVersions || process.env.RETAIN_VERSIONS || 20);
+  const trustProxy = options.trustProxy ?? (process.env.TRUST_PROXY === "1" || process.env.TRUST_PROXY === "true");
+  const cookieSecure = options.cookieSecure ?? (process.env.COOKIE_SECURE === "1" || process.env.COOKIE_SECURE === "true");
   const limiter = createUnlockLimiter({ max: unlockLimit, now: options.now });
 
   return http.createServer(async (req, res) => {
@@ -87,6 +108,7 @@ export function createServer(options = {}) {
           return json(res, 201, { id: meta.id, url: `${base}/s/${meta.id}/`, version: meta.version });
         } catch (createError) {
           if (createError.code === "ID_CONFLICT") return error(res, 409, "ID_CONFLICT", "id 已存在");
+          if (createError.code === "INVALID_INPUT") return error(res, 400, "INVALID_INPUT", "id 格式非法");
           throw createError;
         }
       }
@@ -144,7 +166,7 @@ export function createServer(options = {}) {
         const id = unlockMatch[1];
         const meta = getMeta(dataDir, id);
         if (!meta || meta.deletedAt) return error(res, 404, "NOT_FOUND", "id 不存在或已撤回");
-        const limitKey = `${req.socket.remoteAddress || "unknown"}:${id}`;
+        const limitKey = `${clientIp(req, trustProxy)}:${id}`;
         const gate = limiter.check(limitKey);
         if (!gate.allowed) return error(res, 429, "RATE_LIMITED", "解锁尝试过频");
         const code = await readUnlockCode(req);
@@ -154,9 +176,8 @@ export function createServer(options = {}) {
         }
         limiter.reset(limitKey);
         const session = signSession(secret, { id, exp: Date.now() + COOKIE_TTL_SECONDS * 1000 });
-        return html(res, 200, getLatestHtml(dataDir, id), {
-          "set-cookie": `hs_${id}=${encodeURIComponent(session)}; Path=/s/${id}; HttpOnly; SameSite=Strict; Max-Age=${COOKIE_TTL_SECONDS}`
-        });
+        const cookie = `hs_${id}=${encodeURIComponent(session)}; Path=/s/${id}; HttpOnly; SameSite=Strict; Max-Age=${COOKIE_TTL_SECONDS}${cookieSecure ? "; Secure" : ""}`;
+        return html(res, 200, getLatestHtml(dataDir, id), { "set-cookie": cookie });
       }
 
       return error(res, 404, "NOT_FOUND", "资源不存在");
@@ -172,7 +193,17 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     console.error("UPLOAD_TOKEN is required");
     process.exit(1);
   }
+  if (!process.env.SESSION_SECRET) {
+    console.error("SESSION_SECRET is required");
+    process.exit(1);
+  }
+  const dataDir = process.env.DATA_DIR || "./data";
   const server = createServer();
+  // Physically remove soft-deleted pages past their grace window: once now, then daily.
+  const sweep = () => { try { purgeDeleted(dataDir); } catch { /* logged by next sweep */ } };
+  sweep();
+  const sweepTimer = setInterval(sweep, 24 * 60 * 60 * 1000);
+  sweepTimer.unref?.();
   server.listen(port, () => {
     const address = server.address();
     const actualPort = typeof address === "object" ? address.port : port;

@@ -55,5 +55,8 @@ test("C-10 meeting print CSS expands details", () => {
     enhanced: meetingEnhanced()
   });
 
-  assert.match(html, /@media print[\s\S]*details\[open\]/);
+  // CSS alone can't reveal closed <details> (UA shadow DOM), so we assert the reliable
+  // mechanism: print media rule + a beforeprint handler that opens every <details>.
+  assert.match(html, /@media print[\s\S]*details\s*\{\s*display: block/);
+  assert.match(html, /beforeprint[\s\S]*\.open = true/);
 });

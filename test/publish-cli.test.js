@@ -184,3 +184,138 @@ test("upload failure exits 4, keeps cache, and rerun skips convert", async () =>
   assert.match(h.err(), /CACHE: hit CONVERT/);
   assert.match(readFileSync(join(h.configDir, "manifest.json"), "utf8"), /abc234/);
 });
+
+function staticAdapter() {
+  const calls = [];
+  return {
+    calls,
+    name: "vercel",
+    gate: "static",
+    async detect() { return { available: true }; },
+    async publish(input) { calls.push(input); return { id: input.id || "abc234", url: "https://static/s/abc234/" }; }
+  };
+}
+
+test("B2 static target encrypts the page and never uploads plaintext", async () => {
+  const h = harness();
+  const adapter = staticAdapter();
+  const file = join(h.root, "note.md");
+  writeFileSync(file, "# 机密\n\nSECRET-MARKER 内容");
+
+  const code = await run(["publish", file, "--target", "vercel", "--code", "7XK4Q2NM"], {
+    configDir: h.configDir,
+    cacheDir: h.cacheDir,
+    config: { defaultTarget: "vercel" },
+    adapters: { vercel: adapter },
+    stdout: h.stdout,
+    stderr: h.stderr
+  });
+
+  assert.equal(code, 0);
+  assert.equal(adapter.calls[0].meta.encrypted, true);
+  assert.match(adapter.calls[0].html, /id="hs-vault"/);
+  assert.doesNotMatch(adapter.calls[0].html, /SECRET-MARKER/);
+});
+
+test("B2 static --public uploads plaintext with no code", async () => {
+  const h = harness();
+  const adapter = staticAdapter();
+  const file = join(h.root, "note.md");
+  writeFileSync(file, "# 公开\n\n正文");
+
+  await run(["publish", file, "--target", "vercel", "--public"], {
+    configDir: h.configDir, cacheDir: h.cacheDir, config: { defaultTarget: "vercel" },
+    adapters: { vercel: adapter }, stdout: h.stdout, stderr: h.stderr
+  });
+
+  assert.equal(adapter.calls[0].meta.encrypted, false);
+  assert.doesNotMatch(adapter.calls[0].html, /id="hs-vault"/);
+  assert.match(h.out(), /CODE: none\n$/);
+});
+
+test("C3 republish without code intent reuses the existing code and does not change it", async () => {
+  const h = harness();
+  const adapter = mockAdapter();
+  const file = join(h.root, "note.md");
+  writeFileSync(file, "# T\n\n正文");
+
+  await run(["publish", file, "--target", "mock", "--code", "4821"], {
+    configDir: h.configDir, cacheDir: h.cacheDir, config: { defaultTarget: "mock" },
+    adapters: { mock: adapter }, stdout: h.stdout, stderr: h.stderr
+  });
+  // Second publish with no --code: same code, and PUT must omit the code field (setCode false).
+  await run(["publish", file, "--target", "mock"], {
+    configDir: h.configDir, cacheDir: h.cacheDir, config: { defaultTarget: "mock" },
+    adapters: { mock: adapter }, stdout: h.stdout, stderr: h.stderr
+  });
+
+  assert.equal(adapter.calls[1].meta.code, "4821");
+  assert.equal(adapter.calls[1].meta.setCode, false);
+  assert.match(h.out(), /CODE: 4821\n$/);
+});
+
+test("C4 explicit --style overrides enhanced.style", async () => {
+  const h = harness();
+  const adapter = mockAdapter();
+  const file = join(h.root, "note.md");
+  const enhanced = join(h.root, "e.json");
+  writeFileSync(file, "# T\n\n正文足够长以通过增强长度比例校验，正文足够长。");
+  writeFileSync(enhanced, JSON.stringify({
+    version: 1, template: "generic", style: "clinical", title: "T",
+    tldr: ["要点"], sections: [{ slot: "body", html: "<p>正文足够长以通过增强长度比例校验，正文足够长。</p>" }]
+  }));
+
+  await run(["publish", file, "--target", "mock", "--public", "--enhanced", enhanced, "--style", "darktech"], {
+    configDir: h.configDir, cacheDir: h.cacheDir, config: { defaultTarget: "mock" },
+    adapters: { mock: adapter }, stdout: h.stdout, stderr: h.stderr
+  });
+
+  assert.match(adapter.calls[0].html, /data-hs-style="darktech"/);
+});
+
+test("C5 malformed enhanced.json degrades to faithful and still succeeds", async () => {
+  const h = harness();
+  const adapter = mockAdapter();
+  const file = join(h.root, "note.md");
+  const enhanced = join(h.root, "bad.json");
+  writeFileSync(file, "# T\n\n正文内容");
+  writeFileSync(enhanced, "{ not valid json");
+
+  const code = await run(["publish", file, "--target", "mock", "--public", "--enhanced", enhanced], {
+    configDir: h.configDir, cacheDir: h.cacheDir, config: { defaultTarget: "mock" },
+    adapters: { mock: adapter }, stdout: h.stdout, stderr: h.stderr
+  });
+
+  assert.equal(code, 0);
+  assert.match(h.err(), /ENHANCED: degraded to faithful/);
+  assert.match(adapter.calls[0].html, /id="hs-faithful"/);
+});
+
+test("HTML direct upload warns on local images but ships bytes unchanged", async () => {
+  const h = harness();
+  const adapter = mockAdapter();
+  const file = join(h.root, "page.html");
+  const raw = "<!doctype html><h1>Hi</h1><img src=\"./photo.png\"><img src=\"https://x/y.png\">";
+  writeFileSync(file, raw);
+
+  await run(["publish", file, "--target", "mock", "--public"], {
+    configDir: h.configDir, cacheDir: h.cacheDir, config: { defaultTarget: "mock" },
+    adapters: { mock: adapter }, stdout: h.stdout, stderr: h.stderr
+  });
+
+  assert.equal(adapter.calls[0].html, raw); // byte-exact (D12)
+  assert.match(h.err(), /IMAGE: 1 local image reference/);
+  assert.match(h.err(), /photo\.png/);
+});
+
+test("C7 --public and --code together is rejected", async () => {
+  const h = harness();
+  const file = join(h.root, "note.md");
+  writeFileSync(file, "# T\n\n正文");
+  const code = await run(["publish", file, "--target", "mock", "--public", "--code", "1234"], {
+    configDir: h.configDir, cacheDir: h.cacheDir, config: { defaultTarget: "mock" },
+    adapters: { mock: mockAdapter() }, stdout: h.stdout, stderr: h.stderr
+  });
+  assert.equal(code, 2);
+  assert.match(h.err(), /互斥/);
+});

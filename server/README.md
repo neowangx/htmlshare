@@ -26,10 +26,18 @@ Build the image:
 docker build -f server/Dockerfile -t htmlshare-server:local .
 ```
 
-Run with a persistent data directory:
+Run with a persistent data directory. `UPLOAD_TOKEN` (CLI auth) and `SESSION_SECRET` (signs
+the access-code session cookie) are both required — the server refuses to start without them:
 
 ```bash
-docker run --rm -p 8090:8090 -v "$PWD/data:/data" -e UPLOAD_TOKEN=change-me htmlshare-server:local
+docker run --rm -p 8090:8090 -v "$PWD/data:/data" \
+  -e UPLOAD_TOKEN=change-me -e SESSION_SECRET="$(openssl rand -hex 32)" \
+  htmlshare-server:local
 ```
 
-Before deploying to a real machine, follow the repository rule in [AGENTS.md](../AGENTS.md): read `~/.claude/infrastructure.md`, then update it after a successful deployment.
+Behind an HTTPS reverse proxy, also set `-e TRUST_PROXY=1` (so unlock rate-limiting uses the
+real client IP from `X-Forwarded-For`) and `-e COOKIE_SECURE=1`.
+
+`server/deploy.sh <user@host> <port> <token>` builds the image, copies it over SSH, and runs
+it with a persistent named volume; it generates a `SESSION_SECRET` automatically (set
+`HTMLSHARE_SESSION_SECRET` to keep it stable across redeploys).

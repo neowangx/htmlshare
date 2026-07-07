@@ -7,6 +7,7 @@ import { ensureSiteRoot, newShareId, removeShare, siteDir, writeShare } from "..
 const execFileAsync = promisify(nodeExecFile);
 
 export const name = "cloudflare";
+export const gate = "static";
 
 function projectName(config) {
   return config?.cloudflare?.project || "htmlshare-pages";
@@ -16,21 +17,22 @@ function dataDir(config) {
   return config?.siteDataDir;
 }
 
-function parseDeployUrl(stdout) {
-  const matches = String(stdout).match(/https:\/\/[^\s]+/g);
-  return matches ? matches[matches.length - 1] : null;
+// D8: stable link derived from the fixed Pages project domain, not from the hashed
+// per-deploy URL that `wrangler pages deploy` prints.
+function productionBase(config) {
+  const explicit = config?.cloudflare?.url;
+  if (explicit) return String(explicit).replace(/\/+$/, "");
+  return `https://${projectName(config)}.pages.dev`;
 }
 
 export function createCloudflareAdapter({ execFile = execFileAsync } = {}) {
   async function deploy(root, project) {
-    const { stdout } = await execFile("npx", ["wrangler", "pages", "deploy", root, "--project-name", project], { cwd: root });
-    const url = parseDeployUrl(stdout);
-    if (!url) throw new AdapterError("INTERNAL", "Unable to parse Cloudflare Pages deployment URL");
-    return url;
+    await execFile("npx", ["wrangler", "pages", "deploy", root, "--project-name", project], { cwd: root });
   }
 
   return {
     name,
+    gate,
     async detect() {
       try {
         await execFile("npx", ["wrangler", "whoami"]);
@@ -46,8 +48,8 @@ export function createCloudflareAdapter({ execFile = execFileAsync } = {}) {
       ensureSiteRoot(root);
       writeShare(root, shareId, html);
       try {
-        const deployUrl = await deploy(root, project);
-        return { id: shareId, url: `${deployUrl.replace(/\/+$/, "")}/s/${shareId}/` };
+        await deploy(root, project);
+        return { id: shareId, url: `${productionBase(config)}/s/${shareId}/` };
       } catch (error) {
         if (error instanceof AdapterError) throw error;
         throw new AdapterError("INTERNAL", error.message, { cause: error });

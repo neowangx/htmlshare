@@ -10,7 +10,9 @@ test("K-01 SKILL.md has required frontmatter", () => {
   assert.match(skill, /^---\n/);
   assert.match(skill, /\nname: htmlshare\n/);
   assert.match(skill, /\ndescription: .+share\/publish this markdown/);
-  assert.match(skill, /\ndisable-model-invocation: true\n/);
+  // Model invocation stays enabled so the trigger corpus in the description actually fires
+  // (K-01 触发词). See docs/00 change log 2026-07-06.
+  assert.doesNotMatch(skill, /disable-model-invocation:\s*true/);
 });
 
 test("K-01 referenced CLI commands exist in help", async () => {

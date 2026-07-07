@@ -85,7 +85,7 @@ test("S-01 rejects missing bearer token", async () => {
 test("S-01 server entrypoint starts with PORT=0", async () => {
   const child = spawn(process.execPath, ["server/server.js"], {
     cwd: new URL("../..", import.meta.url).pathname,
-    env: { ...process.env, PORT: "0", UPLOAD_TOKEN: "TOK", DATA_DIR: mkdtempSync(join(tmpdir(), "htmlshare-entry-")) },
+    env: { ...process.env, PORT: "0", UPLOAD_TOKEN: "TOK", SESSION_SECRET: "SECRET", DATA_DIR: mkdtempSync(join(tmpdir(), "htmlshare-entry-")) },
     stdio: ["ignore", "pipe", "pipe"]
   });
   const output = await new Promise((resolve, reject) => {

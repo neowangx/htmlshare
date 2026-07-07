@@ -3,7 +3,7 @@ import * as meeting from "./meeting/index.js";
 import * as proposal from "./proposal/index.js";
 import * as tutorial from "./tutorial/index.js";
 import * as release from "./release/index.js";
-import { AdapterError } from "../adapters/errors.js";
+import { AppError } from "../lib/errors.js";
 
 export const TEMPLATE_SLOTS = Object.freeze({
   generic: ["body"],
@@ -15,28 +15,12 @@ export const TEMPLATE_SLOTS = Object.freeze({
 
 const templateNames = Object.freeze(Object.keys(TEMPLATE_SLOTS));
 
-function sectionTemplate(name) {
-  return {
-    name,
-    slots: TEMPLATE_SLOTS[name],
-    render: generic.render
-  };
-}
+const modules = { generic, meeting, proposal, tutorial, release };
 
-const registry = new Map(templateNames.map((name) => [
-  name,
-  name === "generic"
-    ? { name, slots: generic.slots, render: generic.render }
-    : name === "meeting"
-      ? { name, slots: meeting.slots, render: meeting.render }
-      : name === "proposal"
-        ? { name, slots: proposal.slots, render: proposal.render }
-        : name === "tutorial"
-          ? { name, slots: tutorial.slots, render: tutorial.render }
-          : name === "release"
-            ? { name, slots: release.slots, render: release.render }
-            : sectionTemplate(name)
-]));
+const registry = new Map(templateNames.map((name) => {
+  const mod = modules[name];
+  return [name, { name, slots: mod.slots, render: mod.render }];
+}));
 
 export function list() {
   return [...templateNames];
@@ -45,7 +29,7 @@ export function list() {
 export function get(name) {
   const template = registry.get(name);
   if (!template) {
-    throw new AdapterError("INVALID_INPUT", `Unknown template "${name}". Expected one of: ${templateNames.join(", ")}`);
+    throw new AppError("INVALID_INPUT", `Unknown template "${name}". Expected one of: ${templateNames.join(", ")}`);
   }
   return template;
 }

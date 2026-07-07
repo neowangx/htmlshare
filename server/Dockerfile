@@ -1,15 +1,13 @@
-FROM node:20-bookworm-slim AS deps
-WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
-
+# The self-hosted server imports only Node built-ins (node:http, node:crypto, …) and its own
+# lib/ files — zero npm runtime dependencies — so there is no dependency-install stage. This
+# keeps the image minimal (D14) and avoids shipping the CLI's markdown/sanitize packages.
 FROM node:20-bookworm-slim AS runtime
 ENV NODE_ENV=production \
     PORT=8090 \
     DATA_DIR=/data
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY package.json package-lock.json ./
+# package.json only supplies "type": "module" so server.js runs as ESM; no deps installed.
+COPY package.json ./
 COPY server ./server
 RUN mkdir -p /data && chown -R node:node /app /data
 USER node

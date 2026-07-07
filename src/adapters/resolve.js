@@ -42,7 +42,9 @@ export async function resolveTarget({ requestedTarget, config = {}, configDir, a
     }
     const detected = await adapter.detect?.(config);
     if (!detected || detected.available !== false) {
-      const shouldRemember = remember && config.defaultTarget !== target;
+      // Only remember on first-run auto-detect. Never overwrite an explicit defaultTarget
+      // just because it was transiently unavailable this once.
+      const shouldRemember = remember && !config.defaultTarget && config.defaultTarget !== target;
       if (shouldRemember) {
         saveConfig({ ...config, defaultTarget: target }, configDir);
       }

@@ -2,9 +2,9 @@
 # Deploy htmlshare selfhost server.
 # Usage: deploy.sh <user@host> <port> <token>
 #
-# Before real deployment, read ~/.claude/infrastructure.md for target/server
-# context. After successful deployment, update it with the final baseUrl,
-# container name, port, and data volume.
+# SESSION_SECRET signs the access-code session cookie. Set HTMLSHARE_SESSION_SECRET to a
+# stable value so cookies survive redeploys; otherwise a fresh random secret is generated
+# each run (existing unlock sessions are invalidated, users just re-enter the code).
 set -euo pipefail
 
 usage() {
@@ -23,6 +23,7 @@ CONTAINER_NAME="${HTMLSHARE_CONTAINER_NAME:-htmlshare}"
 IMAGE_NAME="${HTMLSHARE_IMAGE_NAME:-htmlshare-server:local}"
 REMOTE_DIR="${HTMLSHARE_REMOTE_DIR:-~/htmlshare-server}"
 VOLUME_NAME="${HTMLSHARE_VOLUME_NAME:-htmlshare-data}"
+SESSION_SECRET="${HTMLSHARE_SESSION_SECRET:-$(openssl rand -hex 32)}"
 PUBLIC_HOST="${HOST#*@}"
 PUBLIC_BASE="${HTMLSHARE_PUBLIC_BASE:-http://${PUBLIC_HOST}:${PORT}}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -58,6 +59,7 @@ docker run -d --name $(quote "$CONTAINER_NAME") --restart unless-stopped \
   -e PORT=8090 \
   -e DATA_DIR=/data \
   -e UPLOAD_TOKEN=$(quote "$TOKEN") \
+  -e SESSION_SECRET=$(quote "$SESSION_SECRET") \
   -e PUBLIC_BASE=$(quote "$PUBLIC_BASE") \
   $(quote "$IMAGE_NAME")
 rm -f htmlshare-image.tar

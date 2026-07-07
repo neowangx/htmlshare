@@ -2,6 +2,7 @@ import { loadConfig, saveConfig } from "../lib/config.js";
 import { AdapterError } from "./errors.js";
 
 export const name = "cloud";
+export const gate = "server";
 
 const ERROR_BY_STATUS = {
   400: "INVALID_INPUT",
@@ -40,14 +41,19 @@ async function request(path, { method, body, config, fetchFn = fetch }) {
     throw new AdapterError("INVALID_INPUT", "cloud.baseUrl and cloud.token are required");
   }
 
-  const response = await fetchFn(`${baseUrl}${path}`, {
-    method,
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${token}`
-    },
-    body: body == null ? undefined : JSON.stringify(body)
-  });
+  let response;
+  try {
+    response = await fetchFn(`${baseUrl}${path}`, {
+      method,
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${token}`
+      },
+      body: body == null ? undefined : JSON.stringify(body)
+    });
+  } catch (error) {
+    throw new AdapterError("NETWORK", `无法连接云服务 ${baseUrl}：${error.message}`, { cause: error });
+  }
 
   if (!response.ok) {
     const errorBody = await parseError(response);
@@ -77,7 +83,6 @@ export async function publish({ html, id = null, meta = {}, config, fetchFn } = 
   const body = {
     html,
     id,
-    code: meta.code ?? null,
     title: meta.title || "",
     meta: {
       template: meta.template,
@@ -85,6 +90,8 @@ export async function publish({ html, id = null, meta = {}, config, fetchFn } = 
       encrypted: Boolean(meta.encrypted)
     }
   };
+  // Contract §6.1: PUT keeps the existing code unless a `code` field is present.
+  if (!id || meta.setCode) body.code = meta.code ?? null;
 
   if (id) {
     const result = await request(`/api/pages/${encodeURIComponent(id)}`, { method: "PUT", body, config, fetchFn });

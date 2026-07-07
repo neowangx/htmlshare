@@ -26,6 +26,12 @@ table { border-collapse: collapse; width: 100%; }
 th, td { border: 1px solid var(--hs-line); padding: 6px 8px; }
 pre { overflow: auto; padding: 12px; background: var(--hs-code-bg); color: var(--hs-code-ink); border-radius: var(--hs-radius-control); }
 code { font-family: var(--hs-font-code); }
+.hljs-comment, .hljs-quote { color: var(--hs-muted); font-style: italic; }
+.hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-name, .hljs-tag { color: var(--hs-accent); }
+.hljs-string, .hljs-attr, .hljs-symbol, .hljs-number, .hljs-literal, .hljs-meta { color: var(--hs-code-accent, var(--hs-accent)); }
+.hljs-title, .hljs-section, .hljs-type, .hljs-function .hljs-title { color: var(--hs-code-ink); font-weight: 600; }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 700; }
 img { max-width: 100%; height: auto; }
 .hs-action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
 .hs-action-card { border: 1px solid var(--hs-line); border-radius: var(--hs-radius-card); padding: 14px; background: var(--hs-panel-subtle); }
@@ -37,8 +43,24 @@ img { max-width: 100%; height: auto; }
 .hs-change-group + .hs-change-group { margin-top: 14px; }
 .hs-change-badge { display: inline-flex; border: 1px solid var(--hs-line); border-radius: 999px; padding: 2px 8px; color: var(--hs-muted); font-size: 13px; }
 details > summary { cursor: pointer; }
-@media print { #hs-toggle { display: none; } details[open], details:not([open]) { display: block; } details:not([open]) > * { display: block; } }
+@media print { #hs-toggle { display: none; } details { display: block; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+`;
+
+// Reliably expand every <details> for printing: CSS can't override the UA shadow-DOM
+// that hides closed <details> content, so toggle the open attribute around print.
+const PRINT_JS = `
+(() => {
+  let opened = [];
+  addEventListener("beforeprint", () => {
+    opened = [...document.querySelectorAll("details:not([open])")];
+    for (const el of opened) el.open = true;
+  });
+  addEventListener("afterprint", () => {
+    for (const el of opened) el.open = false;
+    opened = [];
+  });
+})();
 `;
 
 const TOGGLE_JS = `
@@ -83,10 +105,22 @@ function validateShape(value) {
 
 function normalizeTldr(items) {
   return items
-    .filter((item) => typeof item === "string")
+    .filter((item) => typeof item === "string" && item.trim().length > 0)
     .slice(0, 5)
-    .map((item) => (item.length > 80 ? item.slice(0, 80) : item))
-    .filter((item) => item.trim().length > 0);
+    .map((item) => ([...item].length > 80 ? [...item].slice(0, 80).join("") : item));
+}
+
+// C4: honor an explicit user --template by re-filtering the agent's sections against the
+// forced template's slot set (same rule as V3). Sections whose slot the new template can't
+// place are dropped with a warning rather than silently mis-rendered.
+function remapTemplate(enhanced, template, warnings) {
+  const allowed = new Set(TEMPLATES[template]);
+  const sections = enhanced.sections.filter((section) => {
+    if (allowed.has(section.slot)) return true;
+    warnings.push(`V3: dropped section "${section.slot}" not valid for overridden template "${template}"`);
+    return false;
+  });
+  return { ...enhanced, template, sections };
 }
 
 export function validateEnhanced(input, faithfulHtml = "") {
@@ -169,20 +203,31 @@ function normalizeStyle(style) {
   return style && style !== "auto" ? style : "clinical";
 }
 
-export function composePage({ title, faithfulHtml, enhanced = null, footerBadge = true, directHtml = false, style = "clinical" } = {}) {
+export function composePage({ title, faithfulHtml, enhanced = null, footerBadge = true, directHtml = false, style = "clinical", styleOverride = null, templateOverride = null, codeProtected = true } = {}) {
   if (directHtml) {
     return { html: String(faithfulHtml || ""), mode: "direct", validation: { ok: false, warnings: [], errors: [] } };
   }
 
   const validation = validateEnhanced(enhanced, faithfulHtml);
-  const hasEnhanced = validation.ok;
+  let hasEnhanced = validation.ok;
+  // D5 / docs05 §3: an explicit user --template/--style wins unconditionally over the
+  // agent-chosen values embedded in enhanced.json.
+  if (hasEnhanced && templateOverride && templateOverride !== "auto") {
+    if (Object.hasOwn(TEMPLATES, templateOverride)) {
+      validation.enhanced = remapTemplate(validation.enhanced, templateOverride, validation.warnings);
+      hasEnhanced = validation.enhanced.sections.length > 0;
+    }
+  }
   const pageTitle = escapeHtml((hasEnhanced ? validation.enhanced.title : title) || "Untitled");
-  const pageStyle = normalizeStyle(hasEnhanced ? validation.enhanced.style : style);
+  const enhancedStyle = hasEnhanced ? validation.enhanced.style : style;
+  const chosenStyle = styleOverride && styleOverride !== "auto" ? styleOverride : enhancedStyle;
+  const pageStyle = normalizeStyle(chosenStyle);
   const styleCss = `${getStyle(pageStyle).css}\n${STRUCTURE_CSS}`;
   const enhancedBlock = hasEnhanced ? `<section id="hs-enhanced" class="hs-panel">${renderEnhancedBody(validation.enhanced)}</section>` : "";
   const faithfulHidden = hasEnhanced ? " hidden" : "";
-  const footer = footerBadge ? `<footer class="hs-footer">made with htmlshare · 轻量访问码保护</footer>` : "";
-  const script = hasEnhanced ? `<script>${TOGGLE_JS}</script>` : "";
+  const footerNote = codeProtected ? " · 轻量访问码保护" : "";
+  const footer = footerBadge ? `<footer class="hs-footer">made with htmlshare${footerNote}</footer>` : "";
+  const script = `<script>${PRINT_JS}${hasEnhanced ? TOGGLE_JS : ""}</script>`;
 
   const html = `<!doctype html>
 <html lang="zh-CN">

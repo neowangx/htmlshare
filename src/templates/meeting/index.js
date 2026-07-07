@@ -1,5 +1,6 @@
 import { escapeHtml } from "../../convert.js";
 import { render as renderGenericTldr } from "../generic/index.js";
+import { listItemsHtml, splitColumns } from "../util.js";
 
 export const slots = ["conclusions", "actions", "open_issues", "discussion"];
 
@@ -35,7 +36,7 @@ function renderActions(section) {
 
   const cards = items.map((item) => {
     const [owner, task, due] = splitAction(item);
-    return `<article class="hs-action-card"><span class="hs-action-owner">${escapeHtml(owner)}</span><p>${escapeHtml(task)}</p><span class="hs-action-due">${escapeHtml(due)}</span></article>`;
+    return `<article class="hs-action-card"><span class="hs-action-owner">${owner}</span><p>${task}</p><span class="hs-action-due">${due}</span></article>`;
   }).join("");
 
   return `<section class="hs-section" data-slot="actions"><h2>${LABELS.actions}</h2><div class="hs-action-grid">${cards}</div></section>`;
@@ -49,17 +50,11 @@ function renderDiscussion(section) {
 }
 
 function extractListItems(html) {
-  return [...String(html).matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi)]
-    .map((match) => stripTags(match[1]))
-    .filter(Boolean);
-}
-
-function stripTags(value) {
-  return value.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+  return listItemsHtml(html);
 }
 
 function splitAction(item) {
-  const parts = item.split(/\s*[|｜]\s*/).map((part) => part.trim()).filter(Boolean);
+  const parts = splitColumns(item);
   if (parts.length >= 3) return [parts[0], parts.slice(1, -1).join(" / "), parts.at(-1)];
   if (parts.length === 2) return [parts[0], parts[1], "未指定"];
   return ["未指定", item, "未指定"];

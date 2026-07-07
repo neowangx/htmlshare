@@ -45,6 +45,12 @@ table { border-collapse: collapse; width: 100%; }
 th, td { border: 1px solid var(--hs-line); padding: 6px 8px; }
 pre { overflow: auto; padding: 12px; background: var(--hs-code-bg); color: var(--hs-code-ink); border-radius: var(--hs-radius-control); }
 code { font-family: var(--hs-font-code); }
+.hljs-comment, .hljs-quote { color: var(--hs-muted); font-style: italic; }
+.hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-name, .hljs-tag { color: var(--hs-accent); }
+.hljs-string, .hljs-attr, .hljs-symbol, .hljs-number, .hljs-literal, .hljs-meta { color: var(--hs-code-accent, var(--hs-accent)); }
+.hljs-title, .hljs-section, .hljs-type, .hljs-function .hljs-title { color: var(--hs-code-ink); font-weight: 600; }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 700; }
 img { max-width: 100%; height: auto; }
 .hs-action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
 .hs-action-card { border: 1px solid var(--hs-line); border-radius: var(--hs-radius-card); padding: 14px; background: var(--hs-panel-subtle); }
@@ -56,7 +62,7 @@ img { max-width: 100%; height: auto; }
 .hs-change-group + .hs-change-group { margin-top: 14px; }
 .hs-change-badge { display: inline-flex; border: 1px solid var(--hs-line); border-radius: 999px; padding: 2px 8px; color: var(--hs-muted); font-size: 13px; }
 details > summary { cursor: pointer; }
-@media print { #hs-toggle { display: none; } details[open], details:not([open]) { display: block; } details:not([open]) > * { display: block; } }
+@media print { #hs-toggle { display: none; } details { display: block; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
 </style>
 </head>
@@ -64,14 +70,14 @@ details > summary { cursor: pointer; }
 <main>
 <header class="hs-topbar"><h1>本地启动 htmlshare 自托管服务</h1><div id="hs-toggle" role="group" aria-label="视图切换"><button type="button" data-view="faithful" aria-pressed="false">原文</button><button type="button" data-view="enhanced" aria-pressed="true">增强</button></div></header>
 <section id="hs-enhanced" class="hs-panel"><div class="hs-tldr"><h2>TL;DR</h2><ul><li>先确认 Node.js 20 与依赖就绪</li><li>用 PORT 启动 server 并检查 healthz</li><li>配置 selfhost 后发布 Markdown</li></ul></div><section class="hs-section" data-slot="prerequisites"><h2>前置条件</h2><ul><li>已安装 Node.js 20 或更高版本。</li><li>当前目录已经运行 <code>npm install</code>。</li><li>终端可以访问项目根目录。</li></ul></section><section class="hs-section" data-slot="steps"><h2>步骤</h2><ol><li>运行 <code>npm test</code>，确认测试通过。</li><li>运行 <code>PORT=8787 node server/server.js</code> 启动服务。</li><li>打开 <code>http://localhost:8787/healthz</code>，确认返回 <code>ok</code>。</li><li>运行 <code>htmlshare config selfhost http://localhost:8787 &lt;token&gt;</code> 写入自托管目标。</li><li>运行 <code>htmlshare publish ./note.md --target selfhost</code> 发布一份 Markdown。</li></ol></section><section class="hs-section" data-slot="faq"><h2>FAQ</h2><details class="hs-faq-item"><summary>如果端口被占用，换一个 PORT 值重新启动。</summary><p>未提供答案</p></details><details class="hs-faq-item"><summary>如果发布返回 401，检查 token 是否与服务端环境变量一致。</summary><p>未提供答案</p></details></section></section>
-<section id="hs-faithful" class="hs-panel" hidden><h1>本地启动 htmlshare 自托管服务</h1>
-<h2>前置条件</h2>
+<section id="hs-faithful" class="hs-panel" hidden><h1 id="%E6%9C%AC%E5%9C%B0%E5%90%AF%E5%8A%A8-htmlshare-%E8%87%AA%E6%89%98%E7%AE%A1%E6%9C%8D%E5%8A%A1">本地启动 htmlshare 自托管服务</h1>
+<h2 id="%E5%89%8D%E7%BD%AE%E6%9D%A1%E4%BB%B6">前置条件</h2>
 <ul>
 <li>已安装 Node.js 20 或更高版本。</li>
 <li>当前目录已经运行 <code class="hljs">npm <span class="hljs-keyword">install</span></code>。</li>
 <li>终端可以访问项目根目录。</li>
 </ul>
-<h2>步骤</h2>
+<h2 id="%E6%AD%A5%E9%AA%A4">步骤</h2>
 <ol>
 <li>运行 <code class="hljs">npm <span class="hljs-built_in">test</span></code>，确认测试通过。</li>
 <li>运行 <code class="hljs"><span class="hljs-attr">PORT=</span><span class="hljs-number">8787</span> <span class="hljs-keyword">node</span> <span class="hljs-title">server</span>/server.js</code> 启动服务。</li>
@@ -79,7 +85,7 @@ details > summary { cursor: pointer; }
 <li>运行 <code class="hljs">htmlshare config selfhost http:<span class="hljs-comment">//localhost:8787 &lt;token&gt;</span></code> 写入自托管目标。</li>
 <li>运行 <code class="hljs">htmlshare publish <span class="hljs-string">./note.md</span> <span class="hljs-params">--target</span> selfhost</code> 发布一份 Markdown。</li>
 </ol>
-<h2>常见问题</h2>
+<h2 id="%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98">常见问题</h2>
 <ul>
 <li>如果端口被占用，换一个 PORT 值重新启动。</li>
 <li>如果发布返回 401，检查 token 是否与服务端环境变量一致。</li>
@@ -87,6 +93,18 @@ details > summary { cursor: pointer; }
 <footer class="hs-footer">made with htmlshare · 轻量访问码保护</footer>
 </main>
 <script>
+(() => {
+  let opened = [];
+  addEventListener("beforeprint", () => {
+    opened = [...document.querySelectorAll("details:not([open])")];
+    for (const el of opened) el.open = true;
+  });
+  addEventListener("afterprint", () => {
+    for (const el of opened) el.open = false;
+    opened = [];
+  });
+})();
+
 (() => {
   const toggle = document.querySelector("#hs-toggle");
   if (!toggle) return;

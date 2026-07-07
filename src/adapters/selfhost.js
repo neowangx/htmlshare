@@ -2,6 +2,7 @@ import { loadConfig } from "../lib/config.js";
 import { AdapterError } from "./errors.js";
 
 export const name = "selfhost";
+export const gate = "server";
 
 const ERROR_BY_STATUS = {
   400: "INVALID_INPUT",
@@ -44,14 +45,19 @@ async function request(path, { method, body, config }) {
     throw new AdapterError("INVALID_INPUT", "selfhost.baseUrl and selfhost.uploadToken are required");
   }
 
-  const response = await fetch(`${baseUrl}${path}`, {
-    method,
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${uploadToken}`
-    },
-    body: body == null ? undefined : JSON.stringify(body)
-  });
+  let response;
+  try {
+    response = await fetch(`${baseUrl}${path}`, {
+      method,
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${uploadToken}`
+      },
+      body: body == null ? undefined : JSON.stringify(body)
+    });
+  } catch (error) {
+    throw new AdapterError("NETWORK", `无法连接自托管服务端 ${baseUrl}：${error.message}`, { cause: error });
+  }
 
   if (!response.ok) {
     const errorBody = await parseError(response);
@@ -74,7 +80,6 @@ export async function publish({ html, id = null, meta = {}, config } = {}) {
   const body = {
     html,
     id,
-    code: meta.code ?? null,
     title: meta.title || "",
     meta: {
       template: meta.template,
@@ -82,6 +87,9 @@ export async function publish({ html, id = null, meta = {}, config } = {}) {
       encrypted: Boolean(meta.encrypted)
     }
   };
+  // Contract §6.1: PUT keeps the existing code unless a `code` field is present. Only send it
+  // on create, or when the caller explicitly changes the code (meta.setCode).
+  if (!id || meta.setCode) body.code = meta.code ?? null;
 
   if (id) {
     const result = await request(`/api/pages/${encodeURIComponent(id)}`, { method: "PUT", body, config });

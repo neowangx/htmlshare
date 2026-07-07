@@ -5,11 +5,13 @@ import { test } from "node:test";
 
 const repoRoot = new URL("..", import.meta.url).pathname;
 
-test("S-04 Dockerfile is multi-stage and runs as non-root with data volume", () => {
+test("S-04 Dockerfile runs as non-root with data volume and no npm dependency install", () => {
   const dockerfile = readFileSync(join(repoRoot, "server", "Dockerfile"), "utf8");
 
-  assert.equal((dockerfile.match(/^FROM /gm) || []).length, 2);
-  assert.match(dockerfile, /npm ci --omit=dev/);
+  // The server has zero npm runtime deps, so the image must NOT run npm ci (that would pull
+  // in the CLI's markdown/sanitize packages the server never imports — D14).
+  assert.doesNotMatch(dockerfile, /npm ci/);
+  assert.doesNotMatch(dockerfile, /node_modules/);
   assert.match(dockerfile, /^USER node$/m);
   assert.match(dockerfile, /VOLUME \["\/data"\]/);
   assert.match(dockerfile, /HEALTHCHECK/);
@@ -29,5 +31,7 @@ test("S-04 deploy.sh implements build, transfer, run, persistent volume, and hea
   assert.match(script, /docker run -d --name/);
   assert.match(script, /-v \$\(quote "\$\{VOLUME_NAME\}:\/data"\)/);
   assert.match(script, /curl -fsS "\$\{PUBLIC_BASE\}\/healthz"/);
-  assert.match(script, /infrastructure\.md/);
+  // Session-cookie secret must be provisioned (B3) and internal ops paths must not leak (D16).
+  assert.match(script, /-e SESSION_SECRET=/);
+  assert.doesNotMatch(script, /infrastructure\.md/);
 });

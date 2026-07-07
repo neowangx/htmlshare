@@ -1,5 +1,6 @@
 import { escapeHtml } from "../../convert.js";
 import { render as renderGenericTldr } from "../generic/index.js";
+import { listItemsHtml, splitColumns } from "../util.js";
 
 export const slots = ["overview", "prerequisites", "steps", "faq"];
 
@@ -33,7 +34,7 @@ function renderSteps(section) {
   if (/<ol[\s>]/i.test(section.html)) return renderSection(section);
   const items = extractListItems(section.html);
   if (!items.length) return renderSection(section);
-  const list = items.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+  const list = items.map((item) => `<li>${item}</li>`).join("");
   return `<section class="hs-section" data-slot="steps"><h2>${LABELS.steps}</h2><ol class="hs-steps">${list}</ol></section>`;
 }
 
@@ -43,25 +44,23 @@ function renderFaq(section) {
   if (!items.length) return renderSection(section);
   const details = items.map((item) => {
     const [question, answer] = splitFaq(item);
-    return `<details class="hs-faq-item"><summary>${escapeHtml(question)}</summary><p>${escapeHtml(answer)}</p></details>`;
+    return `<details class="hs-faq-item"><summary>${question}</summary><p>${answer}</p></details>`;
   }).join("");
   return `<section class="hs-section" data-slot="faq"><h2>${LABELS.faq}</h2>${details}</section>`;
 }
 
 function extractListItems(html) {
-  return [...String(html).matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi)]
-    .map((match) => stripTags(match[1]))
-    .filter(Boolean);
-}
-
-function stripTags(value) {
-  return value.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+  return listItemsHtml(html);
 }
 
 function splitFaq(item) {
-  const parts = item.split(/\s*[|｜]\s*/).map((part) => part.trim()).filter(Boolean);
+  const parts = splitColumns(item);
   if (parts.length >= 2) return [parts[0], parts.slice(1).join(" / ")];
-  const colon = item.match(/^(.+?)[：:]\s*(.+)$/);
-  if (colon) return [colon[1].trim(), colon[2].trim()];
+  // Only split on a colon when the question segment carries no inline markup, so we don't
+  // slice through a tag; otherwise keep the whole item as the question.
+  if (!/[<>]/.test(item)) {
+    const colon = item.match(/^(.+?)[：:]\s*(.+)$/);
+    if (colon) return [colon[1].trim(), colon[2].trim()];
+  }
   return [item, "未提供答案"];
 }

@@ -1,0 +1,15 @@
+# Build context is the repository root (see server/deploy.sh), so Docker only honors a
+# .dockerignore at the root — a server/.dockerignore would be ignored entirely (S1).
+node_modules/
+data/
+.git/
+coverage/
+prototype/
+test/
+server/test/
+examples/
+docs/
+*.local
+.env
+.env.*
+!.env.example
