@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/neowangx/htmlshare/actions/workflows/ci.yml/badge.svg)](https://github.com/neowangx/htmlshare/actions/workflows/ci.yml)
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 Publish AI-generated Markdown or self-contained HTML as a polished shareable page: readable layout, faithful original view, stable link, and a lightweight access code.
 
 ![htmlshare page overview](examples/screenshots/overview.svg)
@@ -11,7 +13,7 @@ Publish AI-generated Markdown or self-contained HTML as a polished shareable pag
 Install with one line (detects Claude Code, Codex, OpenClaw, and Hermes and installs into each):
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/neomini/htmlshare/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/neowangx/htmlshare/main/install.sh | bash
 ```
 
 Then make sure `~/.local/bin` is on your `PATH` and tell your agent: `分享 ./note.md`.
