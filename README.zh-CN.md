@@ -152,7 +152,7 @@ CLI 会报 `UNAUTHORIZED` 上传错误。重新运行 `npx vercel login` 或 `np
 配置命令：
 
 ```bash
-htmlshare config selfhost --base-url https://share.example.com --token example-token
+node ./bin/htmlshare.js config selfhost --base-url https://share.example.com --token example-token
 ```
 
-配置完成后，默认会优先走你的 VPS/自托管目标；之后也可以用 `htmlshare config target` 切换。
+配置完成后，安装使用时可以写成更短的 `htmlshare config selfhost ...`。默认会优先走你的 VPS/自托管目标；之后也可以用 `htmlshare config target` 切换。

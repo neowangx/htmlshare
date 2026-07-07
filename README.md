@@ -134,10 +134,10 @@ Yes. Run a compatible self-hosted endpoint or implement the API in [docs/04-数�
 Configure it with:
 
 ```bash
-htmlshare config selfhost --base-url https://share.example.com --token example-token
+node ./bin/htmlshare.js config selfhost --base-url https://share.example.com --token example-token
 ```
 
-After that, publishes use your VPS/self-hosted target by default unless you change `htmlshare config target`.
+After that, installed usage can use the shorter `htmlshare config selfhost ...` form. Publishes use your VPS/self-hosted target by default unless you change `htmlshare config target`.
 
 ## 中文简介
 
