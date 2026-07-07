@@ -109,7 +109,7 @@ If the user requested a template or style that appears mismatched, obey the user
 
 If upload fails, report the failure and mention that the rendered artifact is cached for retry.
 
-If no target is configured, follow the CLI guidance and help the user configure selfhost/cloud/Vercel/Cloudflare.
+If no target is configured, follow the CLI guidance. If the user has a VPS or server, help them configure `selfhost` first with `htmlshare config selfhost --base-url <url> --token <token>`. If they do not have a VPS or want to skip host setup, help them use Cloudflare Pages (`npx wrangler login`) or another available static target.
 
 ## Response Template
 

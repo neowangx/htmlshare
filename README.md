@@ -53,6 +53,8 @@ htmlshare can coexist with mdshare. Commands, config, cache, and manifest paths 
 
 Official cloud starts with 100MB free storage. Larger official quotas are paid; Vercel and Cloudflare usage depends on your own accounts.
 
+If you have your own VPS or server, configure `selfhost` first and publish through your own endpoint. If you do not have one, skip that setup and use Cloudflare Pages or Vercel instead.
+
 ## Templates And Styles
 
 Templates organize information. Styles change the visual theme. They are independent.
@@ -128,6 +130,14 @@ Switch targets: `htmlshare publish ./note.md --target vercel` (or `cloudflare`, 
 
 **Can I use my own server?**
 Yes. Run a compatible self-hosted endpoint or implement the API in [docs/04-数据模型与API契约.md](docs/04-数据模型与API契约.md).
+
+Configure it with:
+
+```bash
+htmlshare config selfhost --base-url https://share.example.com --token example-token
+```
+
+After that, publishes use your VPS/self-hosted target by default unless you change `htmlshare config target`.
 
 ## 中文简介
 

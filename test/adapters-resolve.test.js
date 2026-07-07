@@ -77,7 +77,11 @@ test("P-04 returns first-use guide when no target is available", async () => {
 
   assert.equal(result.target, null);
   assert.equal(result.guide, GUIDE_TEXT);
+  assert.match(result.guide, /VPS\/主机/);
+  assert.match(result.guide, /--base-url https:\/\/share\.example\.com --token <token>/);
+  assert.match(result.guide, /跳过主机配置/);
   assert.match(result.guide, /npx vercel login/);
   assert.match(result.guide, /npx wrangler login/);
   assert.match(result.guide, /htmlshare config selfhost/);
+  assert.match(result.guide, /htmlshare login/);
 });

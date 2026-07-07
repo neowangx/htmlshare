@@ -61,6 +61,8 @@ htmlshare 可以和 mdshare 共存。命令、配置、缓存和 manifest 路径
 
 官方云默认提供 100MB 免费空间。更大的官方配额需要付费；Vercel 和 Cloudflare 的用量取决于你自己的账号。
 
+如果你有自己的 VPS 或主机，建议先配置 `selfhost`，后续发布就走自己的服务端。如果没有 VPS，或者想跳过主机配置，可以直接使用 Cloudflare Pages 或 Vercel。
+
 ## 模板与风格
 
 模板负责信息结构，风格负责视觉呈现。二者互相独立。
@@ -146,3 +148,11 @@ CLI 会报 `UNAUTHORIZED` 上传错误。重新运行 `npx vercel login` 或 `np
 **可以用自己的服务器吗？**
 
 可以。运行兼容自托管端点，或按 [docs/04-数据模型与API契约.md](docs/04-数据模型与API契约.md) 实现 API。
+
+配置命令：
+
+```bash
+htmlshare config selfhost --base-url https://share.example.com --token example-token
+```
+
+配置完成后，默认会优先走你的 VPS/自托管目标；之后也可以用 `htmlshare config target` 切换。

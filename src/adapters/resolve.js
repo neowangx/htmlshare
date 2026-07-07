@@ -1,10 +1,15 @@
 import { getAdapter } from "./index.js";
 import { saveConfig } from "../lib/config.js";
 
-export const GUIDE_TEXT = `! 还没有可用的发布目标，三选一：
-  1) Vercel      免费，需先执行:  npx vercel login
-  2) Cloudflare  免费，需先执行:  npx wrangler login
-  3) 自托管      自己的服务器，执行:  htmlshare config selfhost
+export const GUIDE_TEXT = `! 还没有可用的发布目标，可以按你的托管情况选择：
+  1) 有自己的 VPS/主机: 先部署兼容服务端，再执行:
+     htmlshare config selfhost --base-url https://share.example.com --token <token>
+  2) 没有 VPS/想跳过主机配置: 使用 Cloudflare Pages，先执行:
+     npx wrangler login
+  3) 也可以使用 Vercel，先执行:
+     npx vercel login
+  4) 官方云服务可用后，执行:
+     htmlshare login
   完成后重新执行本命令即可。转换结果已暂存，不会重做。
 `;
 
