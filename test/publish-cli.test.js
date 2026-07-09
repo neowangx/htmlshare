@@ -291,9 +291,15 @@ test("C5 malformed enhanced.json degrades to faithful and still succeeds", async
   assert.match(adapter.calls[0].html, /id="hs-faithful"/);
 });
 
-test("HTML direct upload warns on local images but ships bytes unchanged", async () => {
+test("HTML direct upload inlines local images that exist as data URIs", async () => {
   const h = harness();
   const adapter = mockAdapter();
+  // 1x1 transparent PNG.
+  const png = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+    "base64"
+  );
+  writeFileSync(join(h.root, "photo.png"), png);
   const file = join(h.root, "page.html");
   const raw = "<!doctype html><h1>Hi</h1><img src=\"./photo.png\"><img src=\"https://x/y.png\">";
   writeFileSync(file, raw);
@@ -303,9 +309,43 @@ test("HTML direct upload warns on local images but ships bytes unchanged", async
     adapters: { mock: adapter }, stdout: h.stdout, stderr: h.stderr
   });
 
+  const uploaded = adapter.calls[0].html;
+  assert.match(uploaded, /src="data:image\/png;base64,/); // local image inlined
+  assert.match(uploaded, /src="https:\/\/x\/y\.png"/); // remote image untouched
+  assert.match(h.err(), /IMAGE: inlined 1\/1 local image/);
+});
+
+test("HTML direct upload with no local images ships bytes unchanged (D12)", async () => {
+  const h = harness();
+  const adapter = mockAdapter();
+  const file = join(h.root, "page.html");
+  const raw = "<!doctype html><h1>Hi</h1><img src=\"data:image/gif;base64,AA==\"><img src=\"https://x/y.png\">";
+  writeFileSync(file, raw);
+
+  await run(["publish", file, "--target", "mock", "--public"], {
+    configDir: h.configDir, cacheDir: h.cacheDir, config: { defaultTarget: "mock" },
+    adapters: { mock: adapter }, stdout: h.stdout, stderr: h.stderr
+  });
+
   assert.equal(adapter.calls[0].html, raw); // byte-exact (D12)
-  assert.match(h.err(), /IMAGE: 1 local image reference/);
-  assert.match(h.err(), /photo\.png/);
+  assert.doesNotMatch(h.err(), /IMAGE:/);
+});
+
+test("HTML direct upload warns and keeps link when local image is missing", async () => {
+  const h = harness();
+  const adapter = mockAdapter();
+  const file = join(h.root, "page.html");
+  const raw = "<!doctype html><h1>Hi</h1><img src=\"./missing.png\">";
+  writeFileSync(file, raw);
+
+  await run(["publish", file, "--target", "mock", "--public"], {
+    configDir: h.configDir, cacheDir: h.cacheDir, config: { defaultTarget: "mock" },
+    adapters: { mock: adapter }, stdout: h.stdout, stderr: h.stderr
+  });
+
+  assert.equal(adapter.calls[0].html, raw); // nothing to inline, left as link
+  assert.match(h.err(), /IMAGE: file not found, left as link/);
+  assert.match(h.err(), /IMAGE: inlined 0\/1 local image/);
 });
 
 test("C7 --public and --code together is rejected", async () => {
