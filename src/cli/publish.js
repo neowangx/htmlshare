@@ -1,10 +1,10 @@
 import { createHash, randomInt } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { basename, extname, isAbsolute, join, resolve } from "node:path";
+import { basename, dirname, extname, isAbsolute, join, resolve } from "node:path";
 
 import { composePage } from "../compose.js";
-import { convertFile } from "../convert.js";
+import { convertFile, inlineLocalImages } from "../convert.js";
 import { encryptHtml, generateStaticCode } from "../encrypt.js";
 import { getAdapter } from "../adapters/index.js";
 import { AdapterError } from "../adapters/errors.js";
@@ -100,9 +100,10 @@ function resolveCode(flags, config, gate, existing) {
   return { code: autoCode(gate), explicit: false };
 }
 
-// D12 keeps HTML direct-upload byte-exact, so we can't inline its images the way the
-// Markdown path does. Instead, detect local relative <img> references and warn — the page
-// would otherwise ship with broken images / external requests once hosted elsewhere.
+// D12: output is self-contained — images travel as data URIs. For direct-upload HTML we
+// inline local relative <img> the same way the Markdown path does (2MB cap, warn + keep as
+// link on missing/oversized/unsupported). HTML with no local images is returned byte-for-byte
+// unchanged, so the byte-exact guarantee still holds for already-self-contained pages.
 function localImageSrcs(html) {
   const found = [];
   for (const match of String(html).matchAll(/<img\b[^>]*?\bsrc\s*=\s*["']([^"']+)["']/gi)) {
@@ -117,10 +118,14 @@ function htmlFromInput(absPath, flags, stderr, config) {
     stderr.write("COLLECT: html direct\n");
     const raw = readFileSync(absPath, "utf8");
     const localImages = localImageSrcs(raw);
-    if (localImages.length) {
-      stderr.write(`IMAGE: ${localImages.length} local image reference(s) left as-is (HTML direct upload is byte-exact); the page may show broken images when hosted. Embed them as data: URIs or use absolute URLs. First: ${localImages[0]}\n`);
+    if (!localImages.length) {
+      return { html: raw, title: basename(absPath, ".html"), directHtml: true, warnings: [] };
     }
-    return { html: raw, title: basename(absPath, ".html"), directHtml: true, warnings: [] };
+    const warnings = [];
+    const html = inlineLocalImages(raw, dirname(absPath), warnings);
+    for (const warning of warnings) stderr.write(`${warning}\n`);
+    stderr.write(`IMAGE: inlined ${localImages.length - warnings.length}/${localImages.length} local image(s) as data URIs\n`);
+    return { html, title: basename(absPath, ".html"), directHtml: true, warnings };
   }
 
   stderr.write("CONVERT: markdown\n");

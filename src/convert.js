@@ -79,9 +79,11 @@ const IMAGE_MIME = {
   ".webp": "image/webp"
 };
 
-function inlineLocalImages(html, baseDir, warnings) {
+// The `src` attribute may be single- or double-quoted: markdown-it emits double quotes, but
+// hand-authored HTML (direct-upload path) uses either — capture the quote char and reuse it.
+export function inlineLocalImages(html, baseDir, warnings) {
   if (!baseDir) return html;
-  return html.replace(/<img\b[^>]*?\bsrc="([^"]*)"[^>]*>/gi, (tag, src) => {
+  return html.replace(/<img\b[^>]*?\bsrc=(["'])([^"']*)\1[^>]*>/gi, (tag, quote, src) => {
     if (!src || /^(?:https?:|data:|mailto:|\/\/)/i.test(src)) return tag;
     let relative;
     try {
@@ -106,7 +108,7 @@ function inlineLocalImages(html, baseDir, warnings) {
       return tag;
     }
     const dataUri = `data:${mime};base64,${bytes.toString("base64")}`;
-    return tag.replace(`src="${src}"`, `src="${dataUri}"`);
+    return tag.replace(`src=${quote}${src}${quote}`, `src=${quote}${dataUri}${quote}`);
   });
 }
 
