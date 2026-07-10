@@ -5,3 +5,7 @@ function shell(title, body) {
 export function gatePage(id, { error = "" } = {}) {
   return shell("需要访问码", `<form method="post" action="/s/${id}/unlock"><h1>请输入访问码</h1><input name="code" inputmode="numeric" autocomplete="off" autofocus><p class="err">${error}</p><button type="submit">打开</button></form>`);
 }
+
+export function expiredPage() {
+  return shell("链接已过期", `<h1>链接已过期</h1><p class="err">此分享已过期，内容不再显示。</p>`);
+}

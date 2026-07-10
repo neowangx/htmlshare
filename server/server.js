@@ -3,9 +3,9 @@ import { timingSafeEqual } from "node:crypto";
 
 import { signSession, parseCookies, verifySession } from "./lib/cookie.js";
 import { verifyCode } from "./lib/code.js";
-import { gatePage } from "./lib/pages.js";
+import { expiredPage, gatePage } from "./lib/pages.js";
 import { createUnlockLimiter } from "./lib/ratelimit.js";
-import { createPage, deletePage, getLatestHtml, getMeta, purgeDeleted, updatePage } from "./lib/store.js";
+import { createPage, deletePage, expireDue, getLatestHtml, getMeta, isExpired, purgeDeleted, setExpiry, updatePage } from "./lib/store.js";
 
 const COOKIE_TTL_SECONDS = 86400;
 
@@ -125,7 +125,13 @@ export function createServer(options = {}) {
           return error(res, 400, "INVALID_INPUT", "请求体不是合法 JSON");
         }
         if (!body.html || typeof body.html !== "string") return error(res, 400, "INVALID_INPUT", "html 必填");
-        const meta = updatePage(dataDir, apiPageMatch[1], body, { retainVersions });
+        let meta;
+        try {
+          meta = updatePage(dataDir, apiPageMatch[1], body, { retainVersions });
+        } catch (updateError) {
+          if (updateError.code === "INVALID_INPUT") return error(res, 400, "INVALID_INPUT", "expiresAt 格式非法");
+          throw updateError;
+        }
         if (!meta) return error(res, 404, "NOT_FOUND", "id 不存在或已撤回");
         return json(res, 200, { version: meta.version });
       }
@@ -137,15 +143,35 @@ export function createServer(options = {}) {
         return res.end();
       }
 
+      if (req.method === "PATCH" && apiPageMatch && url.pathname.endsWith("/meta")) {
+        let body;
+        try {
+          body = await readJson(req, 4096);
+        } catch {
+          return error(res, 400, "INVALID_INPUT", "请求体不是合法 JSON");
+        }
+        try {
+          const meta = setExpiry(dataDir, apiPageMatch[1], body.expiresAt ?? null);
+          if (!meta) return error(res, 404, "NOT_FOUND", "id 不存在或已撤回");
+          return json(res, 200, { id: meta.id, expiresAt: meta.expiresAt });
+        } catch (patchError) {
+          if (patchError.code === "INVALID_INPUT") return error(res, 400, "INVALID_INPUT", "expiresAt 格式非法");
+          throw patchError;
+        }
+      }
+
       if (req.method === "GET" && apiPageMatch && url.pathname.endsWith("/meta")) {
         const meta = getMeta(dataDir, apiPageMatch[1]);
         if (!meta || meta.deletedAt) return error(res, 404, "NOT_FOUND", "id 不存在或已撤回");
+        // Lazily reap on access so an expired page can't be read via its API either.
+        if (isExpired(meta)) { deletePage(dataDir, meta.id, { now: meta.expiresAt }); return error(res, 410, "EXPIRED", "分享已过期"); }
         return json(res, 200, {
           id: meta.id,
           title: meta.title,
           version: meta.version,
           createdAt: meta.createdAt,
           updatedAt: meta.updatedAt,
+          expiresAt: meta.expiresAt || null,
           hasCode: Boolean(meta.codeHash)
         });
       }
@@ -155,6 +181,7 @@ export function createServer(options = {}) {
         const id = pageMatch[1];
         const meta = getMeta(dataDir, id);
         if (!meta || meta.deletedAt) return html(res, 404, "<h1>404</h1>");
+        if (isExpired(meta)) { deletePage(dataDir, id, { now: meta.expiresAt }); return html(res, 410, expiredPage()); }
         if (!meta.codeHash) return html(res, 200, getLatestHtml(dataDir, id));
         const cookies = parseCookies(req.headers.cookie);
         if (verifySession(secret, cookies[`hs_${id}`], id)) return html(res, 200, getLatestHtml(dataDir, id));
@@ -166,6 +193,7 @@ export function createServer(options = {}) {
         const id = unlockMatch[1];
         const meta = getMeta(dataDir, id);
         if (!meta || meta.deletedAt) return error(res, 404, "NOT_FOUND", "id 不存在或已撤回");
+        if (isExpired(meta)) { deletePage(dataDir, id, { now: meta.expiresAt }); return error(res, 410, "EXPIRED", "分享已过期"); }
         const limitKey = `${clientIp(req, trustProxy)}:${id}`;
         const gate = limiter.check(limitKey);
         if (!gate.allowed) return error(res, 429, "RATE_LIMITED", "解锁尝试过频");
@@ -199,8 +227,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
   const dataDir = process.env.DATA_DIR || "./data";
   const server = createServer();
-  // Physically remove soft-deleted pages past their grace window: once now, then daily.
-  const sweep = () => { try { purgeDeleted(dataDir); } catch { /* logged by next sweep */ } };
+  // Soft-delete pages past their deadline, then physically remove anything past the grace
+  // window. Runs once at startup, then daily, so unvisited expired pages are still reaped.
+  const sweep = () => {
+    try { expireDue(dataDir); purgeDeleted(dataDir); } catch { /* logged by next sweep */ }
+  };
   sweep();
   const sweepTimer = setInterval(sweep, 24 * 60 * 60 * 1000);
   sweepTimer.unref?.();

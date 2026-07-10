@@ -84,6 +84,7 @@ export async function publish({ html, id = null, meta = {}, config, fetchFn } = 
     html,
     id,
     title: meta.title || "",
+    expiresAt: meta.expiresAt ?? null,
     meta: {
       template: meta.template,
       style: meta.style,
@@ -100,6 +101,11 @@ export async function publish({ html, id = null, meta = {}, config, fetchFn } = 
   }
 
   return request("/api/pages", { method: "POST", body, config, fetchFn });
+}
+
+export async function setExpiry({ id, expiresAt = null, config, fetchFn } = {}) {
+  if (!id) throw new AdapterError("INVALID_INPUT", "setExpiry requires id");
+  await request(`/api/pages/${encodeURIComponent(id)}/meta`, { method: "PATCH", body: { expiresAt }, config, fetchFn });
 }
 
 export async function unpublish({ id, config, fetchFn } = {}) {

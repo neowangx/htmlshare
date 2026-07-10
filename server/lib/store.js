@@ -11,6 +11,23 @@ export function isValidId(id) {
   return typeof id === "string" && ID_PATTERN.test(id);
 }
 
+// Normalize a client-supplied expiry to an ISO string or null. Kept server-side (not imported
+// from src/) so the server stays a self-contained Docker artifact (D14).
+export function normalizeExpiresAt(value) {
+  if (value == null || value === "") return null;
+  const parsed = Date.parse(value);
+  if (Number.isNaN(parsed)) {
+    const error = new Error("invalid expiresAt");
+    error.code = "INVALID_INPUT";
+    throw error;
+  }
+  return new Date(parsed).toISOString();
+}
+
+export function isExpired(meta, now = Date.now()) {
+  return Boolean(meta?.expiresAt) && Date.parse(meta.expiresAt) <= now;
+}
+
 export function newId() {
   const bytes = randomBytes(6);
   return [...bytes].map((byte) => ID_ALPHABET[byte % ID_ALPHABET.length]).join("");
@@ -64,7 +81,7 @@ function pruneVersions(dataDir, meta, retainVersions = 20) {
   }
 }
 
-export function createPage(dataDir, { id = null, title = "Untitled", html, code = null, meta = {} }) {
+export function createPage(dataDir, { id = null, title = "Untitled", html, code = null, expiresAt = null, meta = {} }) {
   // Never derive a filesystem path from an unvalidated client id — reject anything that
   // isn't exactly the 6-char id shape, closing the `../` path-traversal write (B4).
   if (id != null && !isValidId(id)) {
@@ -72,6 +89,7 @@ export function createPage(dataDir, { id = null, title = "Untitled", html, code 
     error.code = "INVALID_INPUT";
     throw error;
   }
+  const normalizedExpiry = normalizeExpiresAt(expiresAt);
   const pageId = id || newId();
   if (existsSync(metaPath(dataDir, pageId))) {
     const error = new Error("id conflict");
@@ -89,13 +107,14 @@ export function createPage(dataDir, { id = null, title = "Untitled", html, code 
     createdAt: now,
     updatedAt: now,
     deletedAt: null,
+    expiresAt: normalizedExpiry,
     version: 1,
     meta,
     versions: [{ ...firstVersion, at: now }]
   });
 }
 
-export function updatePage(dataDir, id, { title, html, code, meta = {} }, { retainVersions = 20 } = {}) {
+export function updatePage(dataDir, id, { title, html, code, expiresAt, meta = {} }, { retainVersions = 20 } = {}) {
   const existing = getMeta(dataDir, id);
   if (!existing || existing.deletedAt) return null;
   const nextVersion = existing.version + 1;
@@ -106,9 +125,22 @@ export function updatePage(dataDir, id, { title, html, code, meta = {} }, { reta
   if (code !== undefined) {
     existing.codeHash = code ? hashCode(code) : null;
   }
+  // Only touch expiry when the caller sends the field, so a plain content update keeps it.
+  if (expiresAt !== undefined) {
+    existing.expiresAt = normalizeExpiresAt(expiresAt);
+  }
   existing.updatedAt = version.at;
   existing.versions.push(version);
   pruneVersions(dataDir, existing, retainVersions);
+  return writeMeta(dataDir, existing);
+}
+
+// Post-hoc expiry change (PATCH /meta): set or clear the deadline without a content version bump.
+export function setExpiry(dataDir, id, expiresAt) {
+  const existing = getMeta(dataDir, id);
+  if (!existing || existing.deletedAt) return null;
+  existing.expiresAt = normalizeExpiresAt(expiresAt);
+  existing.updatedAt = new Date().toISOString();
   return writeMeta(dataDir, existing);
 }
 
@@ -118,6 +150,29 @@ export function deletePage(dataDir, id, { now = new Date().toISOString() } = {})
   existing.deletedAt = now;
   existing.updatedAt = now;
   return writeMeta(dataDir, existing);
+}
+
+// Soft-delete pages whose deadline has passed so they leave the recoverable grace window from
+// the moment they expired (deletedAt = expiresAt). Called on access (lazy) and periodically so
+// an un-visited expired page is still reaped. Safe to run repeatedly.
+export function expireDue(dataDir, { now = Date.now() } = {}) {
+  let expired = 0;
+  let entries;
+  try {
+    entries = readdirSync(dataDir, { withFileTypes: true });
+  } catch {
+    return 0;
+  }
+  for (const entry of entries) {
+    if (!entry.isDirectory() || !isValidId(entry.name)) continue;
+    const meta = getMeta(dataDir, entry.name);
+    if (!meta || meta.deletedAt || !isExpired(meta, now)) continue;
+    meta.deletedAt = meta.expiresAt;
+    meta.updatedAt = new Date().toISOString();
+    writeMeta(dataDir, meta);
+    expired += 1;
+  }
+  return expired;
 }
 
 // Contract §6.1: soft-deleted pages are physically removed after a grace window (default

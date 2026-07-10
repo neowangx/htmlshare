@@ -6,6 +6,7 @@ import { test } from "node:test";
 
 import { run } from "../src/cli/publish.js";
 import { AdapterError } from "../src/adapters/errors.js";
+import { loadManifest, upsert } from "../src/lib/manifest.js";
 
 function harness() {
   const root = mkdtempSync(join(tmpdir(), "htmlshare-cli-"));
@@ -26,16 +27,29 @@ function harness() {
 
 function mockAdapter(results = {}) {
   const calls = [];
-  return {
+  const setExpiryCalls = [];
+  const unpublishCalls = [];
+  const adapter = {
     calls,
+    setExpiryCalls,
+    unpublishCalls,
     name: "mock",
+    gate: results.gate,
     async detect() { return { available: true }; },
     async publish(input) {
       calls.push(input);
       if (results.fail) throw new AdapterError("INTERNAL", "mock upload failed");
       return { id: input.id || "abc234", url: "https://mock/s/abc234/", version: input.id ? 2 : 1 };
+    },
+    async unpublish(input) {
+      unpublishCalls.push(input);
+      if (results.unpublishNotFound) throw new AdapterError("NOT_FOUND", "gone");
     }
   };
+  if (results.staticTarget !== true) {
+    adapter.setExpiry = async (input) => { setExpiryCalls.push(input); };
+  }
+  return adapter;
 }
 
 test("publish md without enhanced outputs URL and CODE contract", async () => {
@@ -358,4 +372,159 @@ test("C7 --public and --code together is rejected", async () => {
   });
   assert.equal(code, 2);
   assert.match(h.err(), /互斥/);
+});
+
+function publishDeps(h, adapter) {
+  return {
+    configDir: h.configDir, cacheDir: h.cacheDir, config: { defaultTarget: "mock" },
+    adapters: { mock: adapter }, stdout: h.stdout, stderr: h.stderr
+  };
+}
+
+test("--expires 7d echoes the deadline and passes expiresAt to the adapter", async () => {
+  const h = harness();
+  const adapter = mockAdapter();
+  const file = join(h.root, "note.md");
+  writeFileSync(file, "# T\n\n正文");
+
+  const code = await run(["publish", file, "--target", "mock", "--public", "--expires", "7d"], publishDeps(h, adapter));
+
+  assert.equal(code, 0);
+  assert.match(h.err(), /EXPIRES: .*7 天/);
+  assert.ok(adapter.calls[0].meta.expiresAt, "expiresAt should be sent to adapter");
+  assert.equal(loadManifest(h.configDir).entries[0].expiresAt, adapter.calls[0].meta.expiresAt);
+});
+
+test("--no-expires publishes with no deadline", async () => {
+  const h = harness();
+  const adapter = mockAdapter();
+  const file = join(h.root, "note.md");
+  writeFileSync(file, "# T\n\n正文");
+
+  await run(["publish", file, "--target", "mock", "--public", "--no-expires"], publishDeps(h, adapter));
+
+  assert.match(h.err(), /EXPIRES: 永不过期/);
+  assert.equal(adapter.calls[0].meta.expiresAt, null);
+});
+
+test("non-interactive publish with no expiry flag defaults to never (no hang)", async () => {
+  const h = harness();
+  const adapter = mockAdapter();
+  const file = join(h.root, "note.md");
+  writeFileSync(file, "# T\n\n正文");
+
+  const code = await run(["publish", file, "--target", "mock", "--public"], publishDeps(h, adapter));
+
+  assert.equal(code, 0);
+  assert.match(h.err(), /EXPIRES: 永不过期/);
+  assert.equal(adapter.calls[0].meta.expiresAt, null);
+});
+
+test("invalid --expires exits 2 without uploading", async () => {
+  const h = harness();
+  const adapter = mockAdapter();
+  const file = join(h.root, "note.md");
+  writeFileSync(file, "# T\n\n正文");
+
+  const code = await run(["publish", file, "--target", "mock", "--public", "--expires", "garbage"], publishDeps(h, adapter));
+
+  assert.equal(code, 2);
+  assert.match(h.err(), /无法解析/);
+  assert.equal(adapter.calls.length, 0);
+});
+
+test("static target with --expires wraps the page in an expiry guard", async () => {
+  const h = harness();
+  const adapter = mockAdapter({ gate: "static", staticTarget: true });
+  const file = join(h.root, "note.md");
+  writeFileSync(file, "# T\n\n正文");
+
+  await run(["publish", file, "--target", "mock", "--public", "--expires", "7d"], publishDeps(h, adapter));
+
+  assert.match(adapter.calls[0].html, /hs-payload/);
+  assert.match(adapter.calls[0].html, /链接已过期/);
+  assert.match(h.err(), /静态目标到期依赖页内守卫/);
+});
+
+test("expire command sets a new deadline via the adapter and manifest", async () => {
+  const h = harness();
+  const adapter = mockAdapter();
+  const file = join(h.root, "note.md");
+  writeFileSync(file, "# T\n\n正文");
+  await run(["publish", file, "--target", "mock", "--public", "--no-expires"], publishDeps(h, adapter));
+
+  const code = await run(["expire", file, "30d"], publishDeps(h, adapter));
+  assert.equal(code, 0);
+  assert.equal(adapter.setExpiryCalls.length, 1);
+  assert.ok(adapter.setExpiryCalls[0].expiresAt);
+  assert.ok(loadManifest(h.configDir).entries[0].expiresAt);
+
+  await run(["expire", file, "--off"], publishDeps(h, adapter));
+  assert.equal(adapter.setExpiryCalls[1].expiresAt, null);
+  assert.equal(loadManifest(h.configDir).entries[0].expiresAt, null);
+});
+
+test("expire on a static target refuses and points to republish", async () => {
+  const h = harness();
+  const adapter = mockAdapter({ gate: "static", staticTarget: true });
+  const file = join(h.root, "note.md");
+  writeFileSync(file, "# T\n\n正文");
+  await run(["publish", file, "--target", "mock", "--public", "--no-expires"], publishDeps(h, adapter));
+
+  const code = await run(["expire", file, "30d"], publishDeps(h, adapter));
+  assert.equal(code, 2);
+  assert.match(h.err(), /静态目标/);
+});
+
+test("sweep deletes expired shares and drops them from the manifest", async () => {
+  const h = harness();
+  const adapter = mockAdapter();
+  upsert({
+    source: join(h.root, "old.md"), target: "mock", id: "abc234", url: "https://mock/s/abc234/",
+    expiresAt: new Date(Date.now() - 60_000).toISOString()
+  }, h.configDir);
+  upsert({
+    source: join(h.root, "live.md"), target: "mock", id: "xyz789", url: "https://mock/s/xyz789/",
+    expiresAt: new Date(Date.now() + 3_600_000).toISOString()
+  }, h.configDir);
+
+  const code = await run(["sweep", "--yes"], publishDeps(h, adapter));
+
+  assert.equal(code, 0);
+  assert.match(h.out(), /SWEPT: 1/);
+  assert.deepEqual(adapter.unpublishCalls.map((c) => c.id), ["abc234"]);
+  const ids = loadManifest(h.configDir).entries.map((e) => e.id);
+  assert.deepEqual(ids, ["xyz789"]);
+});
+
+test("sweep tolerates a server that already reaped the page (NOT_FOUND)", async () => {
+  const h = harness();
+  const adapter = mockAdapter({ unpublishNotFound: true });
+  upsert({
+    source: join(h.root, "old.md"), target: "mock", id: "abc234", url: "https://mock/s/abc234/",
+    expiresAt: new Date(Date.now() - 60_000).toISOString()
+  }, h.configDir);
+
+  const code = await run(["sweep", "--yes"], publishDeps(h, adapter));
+  assert.equal(code, 0);
+  assert.match(h.out(), /SWEPT: 1/);
+  assert.equal(loadManifest(h.configDir).entries.length, 0);
+});
+
+test("sweep with nothing due reports zero", async () => {
+  const h = harness();
+  const code = await run(["sweep", "--yes"], publishDeps(h, mockAdapter()));
+  assert.equal(code, 0);
+  assert.match(h.out(), /SWEPT: 0/);
+});
+
+test("list includes an expires column", async () => {
+  const h = harness();
+  const adapter = mockAdapter();
+  const file = join(h.root, "note.md");
+  writeFileSync(file, "# T\n\n正文");
+  await run(["publish", file, "--target", "mock", "--public", "--expires", "7d"], publishDeps(h, adapter));
+
+  await run(["list"], publishDeps(h, adapter));
+  assert.match(h.out(), /\texpires/);
 });

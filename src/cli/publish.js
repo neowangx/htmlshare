@@ -6,6 +6,7 @@ import { basename, dirname, extname, isAbsolute, join, resolve } from "node:path
 import { composePage } from "../compose.js";
 import { convertFile, inlineLocalImages } from "../convert.js";
 import { encryptHtml, generateStaticCode } from "../encrypt.js";
+import { describeExpiry, parseExpiry, wrapWithExpiry } from "../expiry.js";
 import { getAdapter } from "../adapters/index.js";
 import { AdapterError } from "../adapters/errors.js";
 import { loginCloud } from "../adapters/cloud.js";
@@ -21,7 +22,7 @@ const TARGETS = new Set(["selfhost", "cloud", "vercel", "cloudflare"]);
 const TEMPLATES = new Set(["auto", "generic", "meeting", "proposal", "tutorial", "release"]);
 const STYLES = new Set(["auto", "clinical", "minimal", "editorial", "darktech"]);
 
-const BOOLEAN_FLAGS = new Set(["public", "force", "json", "yes"]);
+const BOOLEAN_FLAGS = new Set(["public", "force", "json", "yes", "no-expires", "off"]);
 
 function parseArgs(argv) {
   const [command, ...rest] = argv;
@@ -189,6 +190,21 @@ async function promptValue(deps, label) {
   }
 }
 
+// Resolve the publish-time expiry. Explicit flags win; otherwise, when a terminal is attached,
+// ask so nothing goes out without the user confirming a deadline (or "never"). A non-TTY run
+// with no flag (script/CI) defaults to never so it can't hang. Returns an ISO string or null.
+// Throws (code INVALID_EXPIRY) on an unparseable value so the caller can exit 2.
+async function resolveExpiry(flags, deps) {
+  if (flags["no-expires"]) return null;
+  if (flags.expires !== undefined) return parseExpiry(flags.expires);
+  const stdin = deps.stdin || process.stdin;
+  if (stdin?.isTTY) {
+    const answer = await promptValue(deps, "设置过期时间？(如 7d / 24h / 2026-08-01，回车=永不过期)");
+    return parseExpiry(answer);
+  }
+  return null;
+}
+
 async function configCommand(parsed, deps) {
   const stdout = deps.stdout;
   const stderr = deps.stderr;
@@ -321,18 +337,35 @@ async function publishCommand(file, flags, deps) {
   const existing = findEntry(absPath, target, configDir);
   const { code, explicit } = resolveCode(flags, config, gate, existing);
 
-  // D4 static track: no server gate, so encrypt the page itself with the access code.
+  let expiresAt;
+  try {
+    expiresAt = await resolveExpiry(flags, deps);
+  } catch (expiryError) {
+    stderr.write(`INPUT: ${expiryError.message}\n`);
+    return 2;
+  }
+  // Always echo the resolved deadline so a publish never goes out without confirming it.
+  stderr.write(`EXPIRES: ${describeExpiry(expiresAt)}\n`);
+
+  // D4 static track: no server gate, so encrypt the page itself with the access code. Expiry on
+  // static has no server to enforce it, so bake in a client-side guard as an honest backstop
+  // (bypassable — real reaping is `htmlshare sweep`); wrap it outermost so it runs first.
   let uploadHtml = html;
   let encrypted = false;
   if (gate === "static" && code) {
     uploadHtml = encryptHtml(html, code).html;
     encrypted = true;
   }
+  if (gate === "static" && expiresAt) {
+    uploadHtml = wrapWithExpiry(uploadHtml, expiresAt);
+    stderr.write("EXPIRES: 静态目标到期依赖页内守卫（可被绕过）与 htmlshare sweep 清扫，非服务端强制\n");
+  }
 
   const meta = {
     title,
     code,
     setCode: explicit,
+    expiresAt,
     template: flags.template || config.defaults?.template || "generic",
     style: flags.style || config.defaults?.style || "clinical",
     encrypted
@@ -350,6 +383,7 @@ async function publishCommand(file, flags, deps) {
       title,
       template: meta.template,
       style: meta.style,
+      expiresAt: expiresAt || null,
       createdAt: existing?.createdAt || now,
       updatedAt: now
     }, configDir);
@@ -396,7 +430,7 @@ export async function run(argv = process.argv.slice(2), deps = {}) {
   const stderr = deps.stderr || process.stderr;
   const parsed = parseArgs(argv);
   if (parsed.command === "--help" || parsed.command === "-h" || !parsed.command) {
-    stdout.write("htmlshare\n\nUsage:\n  htmlshare publish <file> [--target T] [--code C | --public] [--enhanced enhanced.json] [--template T] [--style S] [--title T] [--force]\n  htmlshare login [--base-url URL]\n  htmlshare list [--json]\n  htmlshare unpublish <file|id> [--yes]\n  htmlshare config [show|target|selfhost|defaults]\n\nFlags:\n  --target selfhost|cloud|vercel|cloudflare  发布目标（缺省自动探测）\n  --code C | --public                        自定义访问码 / 关闭门禁\n  --template auto|generic|meeting|proposal|tutorial|release\n  --style auto|clinical|minimal|editorial|darktech\n  --title T                                  覆盖标题\n  --force                                    跳过转换缓存，强制重渲染\n");
+    stdout.write("htmlshare\n\nUsage:\n  htmlshare publish <file> [--target T] [--code C | --public] [--expires 7d | --no-expires] [--enhanced enhanced.json] [--template T] [--style S] [--title T] [--force]\n  htmlshare login [--base-url URL]\n  htmlshare list [--json]\n  htmlshare unpublish <file|id> [--yes]\n  htmlshare expire <file|id> <7d|24h|2026-08-01|--off>\n  htmlshare sweep [--yes]\n  htmlshare config [show|target|selfhost|defaults]\n\nFlags:\n  --target selfhost|cloud|vercel|cloudflare  发布目标（缺省自动探测）\n  --code C | --public                        自定义访问码 / 关闭门禁\n  --expires 7d | --no-expires                过期时间（缺省会询问；到期后不可访问）\n  --template auto|generic|meeting|proposal|tutorial|release\n  --style auto|clinical|minimal|editorial|darktech\n  --title T                                  覆盖标题\n  --force                                    跳过转换缓存，强制重渲染\n");
     return 0;
   }
   if (parsed.command === "--version" || parsed.command === "-v") {
@@ -408,9 +442,9 @@ export async function run(argv = process.argv.slice(2), deps = {}) {
     if (parsed.flags.json) {
       stdout.write(`${JSON.stringify(manifest.entries, null, 2)}\n`);
     } else {
-      stdout.write("title\ttarget\turl\tupdatedAt\tcode\n");
+      stdout.write("title\ttarget\turl\tupdatedAt\tcode\texpires\n");
       for (const entry of manifest.entries) {
-        stdout.write(`${entry.title || ""}\t${entry.target}\t${entry.url}\t${entry.updatedAt || ""}\t${entry.code || "none"}\n`);
+        stdout.write(`${entry.title || ""}\t${entry.target}\t${entry.url}\t${entry.updatedAt || ""}\t${entry.code || "none"}\t${entry.expiresAt || "none"}\n`);
       }
     }
     return 0;
@@ -478,6 +512,84 @@ export async function run(argv = process.argv.slice(2), deps = {}) {
       }
       throw error;
     }
+  }
+
+  if (parsed.command === "expire" && parsed.file) {
+    const manifest = loadManifest(deps.configDir);
+    const config = deps.config || loadConfig(deps.configDir);
+    const target = parsed.flags.target || config.defaultTarget;
+    const maybePath = isAbsolute(parsed.file) ? parsed.file : resolve(deps.cwd || process.cwd(), parsed.file);
+    const entry = manifest.entries.find((item) => item.id === parsed.file)
+      || manifest.entries.find((item) => item.source === maybePath && (!target || item.target === target));
+    if (!entry) {
+      stderr.write("EXPIRE: entry not found\n");
+      return 2;
+    }
+    let expiresAt;
+    try {
+      expiresAt = parsed.flags.off ? null : parseExpiry(parsed.positionals[1]);
+    } catch (expiryError) {
+      stderr.write(`INPUT: ${expiryError.message}\n`);
+      return 2;
+    }
+    const adapter = deps.adapters?.[entry.target] || getAdapter(entry.target);
+    if (typeof adapter.setExpiry !== "function") {
+      stderr.write(`EXPIRE: ${entry.target} 是静态目标，改期请重新 htmlshare publish <file> --expires ...\n`);
+      return 2;
+    }
+    try {
+      await adapter.setExpiry({ id: entry.id, expiresAt, config });
+      upsert({ source: entry.source, target: entry.target, expiresAt: expiresAt || null }, deps.configDir);
+      stdout.write(`EXPIRES: ${describeExpiry(expiresAt)}\n`);
+      return 0;
+    } catch (error) {
+      if (error instanceof AdapterError) {
+        stderr.write(`EXPIRE: ${error.code} ${error.message}\n`);
+        return 4;
+      }
+      throw error;
+    }
+  }
+
+  if (parsed.command === "sweep") {
+    const manifest = loadManifest(deps.configDir);
+    const config = deps.config || loadConfig(deps.configDir);
+    const nowMs = Date.now();
+    const due = manifest.entries.filter((entry) => entry.expiresAt && Date.parse(entry.expiresAt) <= nowMs);
+    if (!due.length) {
+      stdout.write("SWEPT: 0\n");
+      return 0;
+    }
+    const stdin = deps.stdin || process.stdin;
+    if (!parsed.flags.yes) {
+      if (!stdin.isTTY) {
+        stderr.write(`将删除 ${due.length} 个已过期分享；脚本环境请加 --yes。\n`);
+        return 5;
+      }
+      const answer = await promptValue({ ...deps, stdout, stderr }, `确认删除 ${due.length} 个已过期分享？输入 y 确认`);
+      if (String(answer || "").trim().toLowerCase() !== "y") {
+        stderr.write("SWEEP: 已取消\n");
+        return 0;
+      }
+    }
+    let swept = 0;
+    for (const entry of due) {
+      const adapter = deps.adapters?.[entry.target] || getAdapter(entry.target);
+      try {
+        await adapter.unpublish({ id: entry.id, config });
+      } catch (error) {
+        // A server target may have already reaped it (NOT_FOUND); either way drop the stale
+        // manifest entry. Surface anything else but keep sweeping the rest.
+        if (!(error instanceof AdapterError) || error.code !== "NOT_FOUND") {
+          stderr.write(`SWEEP: ${entry.id} ${error.code || "ERROR"} ${error.message || ""}\n`);
+          continue;
+        }
+      }
+      remove(entry.source, entry.target, deps.configDir);
+      swept += 1;
+    }
+    stdout.write(`SWEPT: ${swept}\n`);
+    return 0;
   }
 
   if (parsed.command !== "publish" || !parsed.file) {
