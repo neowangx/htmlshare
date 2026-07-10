@@ -81,6 +81,9 @@ export async function publish({ html, id = null, meta = {}, config } = {}) {
     html,
     id,
     title: meta.title || "",
+    // Each publish carries the user's current expiry choice (flag/prompt/never), so send it on
+    // both create and update; the server only re-applies it when the field is present.
+    expiresAt: meta.expiresAt ?? null,
     meta: {
       template: meta.template,
       style: meta.style,
@@ -98,6 +101,11 @@ export async function publish({ html, id = null, meta = {}, config } = {}) {
   }
 
   return request("/api/pages", { method: "POST", body, config });
+}
+
+export async function setExpiry({ id, expiresAt = null, config } = {}) {
+  if (!id) throw new AdapterError("INVALID_INPUT", "setExpiry requires id");
+  await request(`/api/pages/${encodeURIComponent(id)}/meta`, { method: "PATCH", body: { expiresAt }, config });
 }
 
 export async function unpublish({ id, config } = {}) {

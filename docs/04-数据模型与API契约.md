@@ -21,7 +21,7 @@
 | 404 | NOT_FOUND | id 不存在或已撤回 |
 | 409 | ID_CONFLICT | 显式指定的 id 已被占用 |
 | 413 | TOO_LARGE | 超单页体积上限 |
-| 410 | EXPIRED | 设备码已过期（仅 cloud 登录流程） |
+| 410 | EXPIRED | 分享已过期（页面到期），或设备码已过期（cloud 登录流程） |
 | 428 | AUTH_PENDING | 设备码尚未激活（仅 cloud 登录流程） |
 | 429 | RATE_LIMITED | 解锁尝试/请求过频 |
 | 500 | INTERNAL | 服务端错误 |
@@ -54,10 +54,11 @@
     "code": "7XK4Q2NM",                 // --public 时为 null
     "title": "产品评审会纪要",
     "template": "meeting", "style": "clinical",
+    "expiresAt": "2026-08-01T00:00:00.000Z", // 无过期为 null
     "createdAt": "...", "updatedAt": "..."
 } ] }
 ```
-键规则：`source+target` 唯一；同源文件重发 → 复用 entry（D8）。
+键规则：`source+target` 唯一；同源文件重发 → 复用 entry（D8）。`expiresAt` 由 `--expires`/发布时确认设置，`htmlshare sweep` 据此清理已过期分享。
 
 ### 2.3 静态站点镜像（`~/.local/share/htmlshare/sites/<target>/<project>/`）
 
@@ -117,18 +118,21 @@ export async function unpublish({ id })   // → void，幂等
 **POST /api/pages** — 新建。`Authorization: Bearer <token>`
 ```json
 { "html": "<!doctype html>...", "id": null, "code": "4821",
-  "title": "...", "meta": { "template": "meeting", "style": "clinical" } }
+  "title": "...", "expiresAt": "2026-08-01T00:00:00.000Z",  // 可选，无过期为 null
+  "meta": { "template": "meeting", "style": "clinical" } }
 ```
 → 201 `{ "id": "k3f9m2", "url": "https://.../s/k3f9m2/", "version": 1 }`
-错误：401 / 409（显式 id 冲突）/ 413 / 403(仅 cloud)
+错误：401 / 409（显式 id 冲突）/ 413 / 403(仅 cloud)；`expiresAt` 非法 → 400
 
-**PUT /api/pages/{id}** — 更新内容（码不变；含 `"code"` 字段则同时改码）→ 200 `{ "version": 2 }`
+**PUT /api/pages/{id}** — 更新内容（码不变；含 `"code"` 字段则同时改码；含 `"expiresAt"` 字段则同时改期，缺省保留）→ 200 `{ "version": 2 }`
+
+**PATCH /api/pages/{id}/meta** （Bearer）— 只改元数据不发新版本。`{ "expiresAt": "..."|null }` → 200 `{ "id", "expiresAt" }`；用于 `htmlshare expire`。
 
 **DELETE /api/pages/{id}** — 撤回（软删 7 天后清除）→ 204
 
-**GET /api/pages/{id}/meta** （Bearer）→ 200 `{ "id","title","version","createdAt","updatedAt","hasCode": true }`
+**GET /api/pages/{id}/meta** （Bearer）→ 200 `{ "id","title","version","createdAt","updatedAt","expiresAt": null,"hasCode": true }`；已过期 → 410 EXPIRED（并软删入 7 天宽限）
 
-**GET /s/{id}/** — 无码页面直接返回 HTML；有码返回门禁页（含 CSRF 无关的纯表单）。
+**GET /s/{id}/** — 无码页面直接返回 HTML；有码返回门禁页（含 CSRF 无关的纯表单）。已过期 → 410「链接已过期」页（首次访问即软删，宽限期从到期时刻起算）。
 **POST /s/{id}/unlock** — `{ "code": "4821" }`
 → 200 返回内容 HTML + `Set-Cookie: hs_<id>=<会话签名>; Path=/s/<id>; HttpOnly; SameSite=Strict; Max-Age=86400`
 → 403 `{"error":"INVALID_INPUT","message":"访问码不正确"}`；429 限速（默认 5 次/分/IP）。
@@ -147,7 +151,7 @@ export async function unpublish({ id })   // → void，幂等
 
 ```
 data/<id>/meta.json   { id, title, codeHash(scrypt), createdAt, updatedAt,
-                        deletedAt|null, versions: [{n, at, bytes}] }
+                        deletedAt|null, expiresAt|null, versions: [{n, at, bytes}] }
 data/<id>/v<n>.html
 ```
 

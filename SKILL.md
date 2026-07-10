@@ -115,6 +115,24 @@ If upload fails, report the failure and mention that the rendered artifact is ca
 
 If no target is configured, follow the CLI guidance. If the user has a VPS or server, help them configure `selfhost` first with `htmlshare config selfhost --base-url <url> --token <token>`. If they do not have a VPS or want to skip host setup, help them use Cloudflare Pages (`npx wrangler login`) or another available static target.
 
+## Expiry and Lifecycle
+
+Because you run the CLI non-interactively (no terminal prompt reaches the user), you MUST confirm an expiry before publishing rather than let it silently default. Before the first publish in a conversation, ask the user whether the share should expire (e.g. "要不要设置过期时间？比如 7 天后自动失效，还是永久有效？"). Then pass the choice explicitly:
+
+- A deadline: `--expires 7d` (also `24h`, `30m`, or an absolute date like `2026-08-01`).
+- Never: `--no-expires`.
+
+Expiry means the share is deleted when it lapses: on server targets (selfhost/cloud) the server returns "expired" and soft-deletes it (recoverable for 7 days); on static targets (vercel/cloudflare) the page carries a client-side guard that hides content past the deadline — tell the user this guard is a courtesy backstop (bypassable), and that `htmlshare sweep` actually deletes expired static shares.
+
+Managing existing shares:
+
+- `htmlshare list` — show every share (adds an `expires` column).
+- `htmlshare unpublish <file|id>` — delete a share (revocable for 7 days on server targets).
+- `htmlshare expire <file|id> <7d|2026-08-01|--off>` — change or clear a deadline (server targets; for static, republish with `--expires`).
+- `htmlshare sweep` — delete all shares whose deadline has passed (mainly for static targets; server targets auto-expire).
+
+When the user says things like "把那个链接删掉" / "让这个 7 天后过期" / "清一下过期的", map them to `unpublish` / `--expires` (or `expire`) / `sweep` respectively.
+
 ## Response Template
 
 After publishing, relay the CLI's last two lines exactly, then add one short sentence about the protection level:
