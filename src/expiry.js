@@ -40,14 +40,15 @@ export function isExpired(expiresAt, now = Date.now()) {
   return Boolean(expiresAt) && Date.parse(expiresAt) <= now;
 }
 
-// Human-readable one-liner for the publish-time confirmation echo.
+// Human-readable one-liner for the publish-time confirmation echo. The parenthetical is a
+// rounded hint (the absolute ISO is shown alongside it, so precision isn't lost); rounding
+// also keeps it stable — `7d` reads as "7 天后" even though a few ms elapse before this runs.
 export function describeExpiry(expiresAt, now = Date.now()) {
   if (!expiresAt) return "永不过期";
   const ms = Date.parse(expiresAt) - now;
   if (ms <= 0) return `${expiresAt}（已过期）`;
-  const days = Math.floor(ms / UNIT_MS.d);
-  const hours = Math.floor((ms % UNIT_MS.d) / UNIT_MS.h);
-  const rel = days > 0 ? `${days} 天${hours > 0 ? ` ${hours} 小时` : ""}后` : hours > 0 ? `${hours} 小时后` : "不到 1 小时后";
+  const hours = ms / UNIT_MS.h;
+  const rel = hours >= 24 ? `${Math.round(hours / 24)} 天后` : hours >= 1 ? `${Math.round(hours)} 小时后` : "不到 1 小时后";
   return `${expiresAt}（${rel}）`;
 }
 
