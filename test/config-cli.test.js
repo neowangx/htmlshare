@@ -75,11 +75,10 @@ test("C-15 config defaults set values and publish reads them", async () => {
   writeFileSync(file, "# Proposal\n\nBody");
 
   assert.equal(await run(["config", "target", "selfhost"], { configDir: h.configDir, stdout: h.stdout, stderr: h.stderr }), 0);
-  assert.equal(await run(["config", "defaults", "template", "proposal"], { configDir: h.configDir, stdout: h.stdout, stderr: h.stderr }), 0);
   assert.equal(await run(["config", "defaults", "style", "minimal"], { configDir: h.configDir, stdout: h.stdout, stderr: h.stderr }), 0);
   assert.equal(await run(["config", "defaults", "code", "2468"], { configDir: h.configDir, stdout: h.stdout, stderr: h.stderr }), 0);
 
-  const code = await run(["publish", file], {
+  const code = await run(["publish", file, "--no-expires"], {
     configDir: h.configDir,
     cacheDir: h.cacheDir,
     adapters: { selfhost: mock },
@@ -88,10 +87,15 @@ test("C-15 config defaults set values and publish reads them", async () => {
   });
 
   assert.equal(code, 0);
-  assert.equal(mock.calls[0].meta.template, "proposal");
   assert.equal(mock.calls[0].meta.style, "minimal");
   assert.equal(mock.calls[0].meta.code, "2468");
-  assert.deepEqual(loadManifest(h.configDir).entries[0].template, "proposal");
+  assert.equal(loadManifest(h.configDir).entries[0].style, "minimal");
+});
+
+test("C-15 config defaults rejects the removed template key", async () => {
+  const h = harness();
+  assert.equal(await run(["config", "defaults", "template", "proposal"], { configDir: h.configDir, stdout: h.stdout, stderr: h.stderr }), 2);
+  assert.match(h.err(), /style\|code/);
 });
 
 test("C-15 config footerBadge false affects composed page", async () => {

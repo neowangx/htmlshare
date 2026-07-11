@@ -79,12 +79,12 @@ test("publish md with valid enhanced renders dual mode", async () => {
   const enhanced = join(h.root, "enhanced.json");
   writeFileSync(file, "# 会纪要\n\n## 结论\n\n我们确认继续推进，内容足够长以通过增强长度比例校验。");
   writeFileSync(enhanced, JSON.stringify({
-    version: 1,
-    template: "generic",
-    style: "clinical",
-    title: "会纪要",
-    tldr: ["确认继续推进"],
-    sections: [{ slot: "body", html: "<p>我们确认继续推进，内容足够长以通过增强长度比例校验，并保留原文对照。</p>" }]
+    protocol: "a2ui/0.9-static", theme: "clinical", title: "会纪要", root: "c0",
+    components: [
+      { id: "c0", component: "Column", children: ["h", "b"] },
+      { id: "h", component: "Hero", headline: "结论" },
+      { id: "b", component: "RichText", html: "<p>我们确认继续推进，内容足够长以通过增强长度比例校验，并保留原文对照。</p>" }
+    ]
   }));
 
   const code = await run(["publish", file, "--target", "mock", "--code", "4821", "--enhanced", enhanced], {
@@ -275,8 +275,11 @@ test("C4 explicit --style overrides enhanced.style", async () => {
   const enhanced = join(h.root, "e.json");
   writeFileSync(file, "# T\n\n正文足够长以通过增强长度比例校验，正文足够长。");
   writeFileSync(enhanced, JSON.stringify({
-    version: 1, template: "generic", style: "clinical", title: "T",
-    tldr: ["要点"], sections: [{ slot: "body", html: "<p>正文足够长以通过增强长度比例校验，正文足够长。</p>" }]
+    protocol: "a2ui/0.9-static", theme: "clinical", title: "T", root: "c0",
+    components: [
+      { id: "c0", component: "Column", children: ["b"] },
+      { id: "b", component: "RichText", html: "<p>正文足够长以通过增强长度比例校验，正文足够长。</p>" }
+    ]
   }));
 
   await run(["publish", file, "--target", "mock", "--public", "--enhanced", enhanced, "--style", "darktech"], {

@@ -1,25 +1,34 @@
 {
-  "version": 1,
-  "template": "meeting",
-  "style": "clinical",
+  "protocol": "a2ui/0.9-static",
+  "theme": "clinical",
   "title": "Q3 产品评审会议纪要",
-  "tldr": [
-    "Q3 主推团队协作仪表盘",
-    "灰度名单 7 月 12 日前完成",
-    "预算上限 8 万元"
-  ],
-  "sections": [
-    {
-      "slot": "conclusions",
-      "html": "<ul><li>决定 Q3 主推团队协作仪表盘，先覆盖销售和客服两个团队。</li><li>决定 7 月 12 日前完成灰度名单，由 Ada 负责。</li><li>决定预算上限为 8 万元，不新增外包。</li></ul>"
-    },
-    {
-      "slot": "actions",
-      "html": "<ul><li>Ada | 整理灰度名单 | 2026-07-12</li><li>周宁 | 输出埋点清单 | 2026-07-10</li><li>李想 | 准备客户访谈问题 | 2026-07-09</li><li>小林 | 更新发布节奏表 | 2026-07-08</li></ul>"
-    },
-    {
-      "slot": "discussion",
-      "html": "<details><summary>讨论记录</summary><p>议题一：销售团队需要看线索响应时长，客服团队更关心升级工单数量。大家同意第一版只做共用指标，不做复杂权限。</p><p>议题二：周宁提醒埋点缺口较大，需要先补事件上报。Ada 认为灰度团队不要超过 20 人，避免支持压力过高。</p><p>议题三：李想建议把客户访谈放在灰度前一周完成，会议同意。</p></details>"
-    }
+  "root": "root",
+  "components": [
+    { "id": "root", "component": "Column", "children": ["hero", "stats", "h-decision", "decisions", "h-actions", "actions", "h-discuss", "discuss"] },
+    { "id": "hero", "component": "Hero", "kicker": "产品评审", "headline": "Q3 产品评审会议纪要", "meta": "2026-07-05 · 线上 · 小林 / Ada / 周宁 / 李想" },
+    { "id": "stats", "component": "StatGrid", "items": [
+      { "value": "8万", "label": "预算上限" },
+      { "value": "7/12", "label": "灰度截止" },
+      { "value": "2", "label": "覆盖团队" }
+    ] },
+    { "id": "h-decision", "component": "Text", "variant": "h2", "text": "决议" },
+    { "id": "decisions", "component": "List", "ordered": true, "items": [
+      "Q3 主推团队协作仪表盘，先覆盖销售和客服两个团队。",
+      "7 月 12 日前完成灰度名单，由 Ada 负责。",
+      "预算上限 8 万元，不新增外包。"
+    ] },
+    { "id": "h-actions", "component": "Text", "variant": "h2", "text": "行动项" },
+    { "id": "actions", "component": "Table", "headers": ["负责人", "事项", "截止"], "rows": [
+      ["Ada", "整理灰度名单", "2026-07-12"],
+      ["周宁", "输出埋点清单", "2026-07-10"],
+      ["李想", "准备客户访谈问题", "2026-07-09"],
+      ["小林", "更新发布节奏表", "2026-07-08"]
+    ] },
+    { "id": "h-discuss", "component": "Text", "variant": "h2", "text": "讨论记录" },
+    { "id": "discuss", "component": "Timeline", "items": [
+      { "title": "指标口径", "detail": "销售看线索响应时长，客服看升级工单；第一版只做共用指标，不做复杂权限。" },
+      { "title": "埋点与灰度", "detail": "埋点缺口较大需先补事件上报；灰度团队不超过 20 人以控支持压力。" },
+      { "title": "客户访谈", "detail": "客户访谈放在灰度前一周完成，会议同意。" }
+    ] }
   ]
 }

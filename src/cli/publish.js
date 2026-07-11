@@ -19,7 +19,6 @@ function gateOf(adapter, target) {
 }
 
 const TARGETS = new Set(["selfhost", "cloud", "vercel", "cloudflare"]);
-const TEMPLATES = new Set(["auto", "generic", "meeting", "proposal", "tutorial", "release"]);
 const STYLES = new Set(["auto", "clinical", "minimal", "editorial", "darktech"]);
 
 const BOOLEAN_FLAGS = new Set(["public", "force", "json", "yes", "no-expires", "off"]);
@@ -56,13 +55,12 @@ function defaultCacheDir() {
 }
 
 // Cache key must cover every input that changes the rendered artifact, or a second publish
-// with new --enhanced/--style/--template/--title would silently reuse the stale HTML.
+// with new --enhanced/--style/--title would silently reuse the stale HTML.
 function cacheKey(absPath, flags, config) {
   const stat = statSync(absPath);
   const enhancedContent = flags.enhanced ? readFileSafe(resolve(flags.enhanced)) : "";
   const render = JSON.stringify({
     style: flags.style || config.defaults?.style || "clinical",
-    template: flags.template || config.defaults?.template || "",
     title: flags.title || "",
     footer: configFooter(config),
     enhanced: enhancedContent
@@ -142,7 +140,6 @@ function htmlFromInput(absPath, flags, stderr, config) {
     footerBadge: configFooter(config),
     style: flags.style || config.defaults?.style || "clinical",
     styleOverride: flags.style || null,
-    templateOverride: flags.template || null,
     codeProtected: !flags.public
   });
   if (flags.enhanced && !page.validation.ok) {
@@ -244,12 +241,8 @@ async function configCommand(parsed, deps) {
       stdout.write(`${JSON.stringify(config.defaults || {}, null, 2)}\n`);
       return 0;
     }
-    if (!["template", "style", "code"].includes(key) || value === undefined) {
-      stderr.write("CONFIG: defaults usage: htmlshare config defaults <template|style|code> <value>\n");
-      return 2;
-    }
-    if (key === "template" && !TEMPLATES.has(value)) {
-      stderr.write("CONFIG: template must be auto|generic|meeting|proposal|tutorial|release\n");
+    if (!["style", "code"].includes(key) || value === undefined) {
+      stderr.write("CONFIG: defaults usage: htmlshare config defaults <style|code> <value>\n");
       return 2;
     }
     if (key === "style" && !STYLES.has(value)) {
@@ -279,10 +272,6 @@ async function publishCommand(file, flags, deps) {
   }
   if (flags.target && !TARGETS.has(flags.target) && !deps.adapters?.[flags.target]) {
     stderr.write("INPUT: --target 必须是 selfhost|cloud|vercel|cloudflare 之一\n");
-    return 2;
-  }
-  if (flags.template && !TEMPLATES.has(flags.template)) {
-    stderr.write("INPUT: --template 必须是 auto|generic|meeting|proposal|tutorial|release 之一\n");
     return 2;
   }
   if (flags.style && !STYLES.has(flags.style)) {
@@ -366,7 +355,9 @@ async function publishCommand(file, flags, deps) {
     code,
     setCode: explicit,
     expiresAt,
-    template: flags.template || config.defaults?.template || "generic",
+    // Rendering is A2UI-driven now; "template" persists only as an opaque storage label so the
+    // server/adapter meta shape stays byte-identical across repos (D9).
+    template: "generic",
     style: flags.style || config.defaults?.style || "clinical",
     encrypted
   };
@@ -430,7 +421,7 @@ export async function run(argv = process.argv.slice(2), deps = {}) {
   const stderr = deps.stderr || process.stderr;
   const parsed = parseArgs(argv);
   if (parsed.command === "--help" || parsed.command === "-h" || !parsed.command) {
-    stdout.write("htmlshare\n\nUsage:\n  htmlshare publish <file> [--target T] [--code C | --public] [--expires 7d | --no-expires] [--enhanced enhanced.json] [--template T] [--style S] [--title T] [--force]\n  htmlshare login [--base-url URL]\n  htmlshare list [--json]\n  htmlshare unpublish <file|id> [--yes]\n  htmlshare expire <file|id> <7d|24h|2026-08-01|--off>\n  htmlshare sweep [--yes]\n  htmlshare config [show|target|selfhost|defaults]\n\nFlags:\n  --target selfhost|cloud|vercel|cloudflare  发布目标（缺省自动探测）\n  --code C | --public                        自定义访问码 / 关闭门禁\n  --expires 7d | --no-expires                过期时间（缺省会询问；到期后不可访问）\n  --template auto|generic|meeting|proposal|tutorial|release\n  --style auto|clinical|minimal|editorial|darktech\n  --title T                                  覆盖标题\n  --force                                    跳过转换缓存，强制重渲染\n");
+    stdout.write("htmlshare\n\nUsage:\n  htmlshare publish <file> [--target T] [--code C | --public] [--expires 7d | --no-expires] [--enhanced a2ui.json] [--style S] [--title T] [--force]\n  htmlshare login [--base-url URL]\n  htmlshare list [--json]\n  htmlshare unpublish <file|id> [--yes]\n  htmlshare expire <file|id> <7d|24h|2026-08-01|--off>\n  htmlshare sweep [--yes]\n  htmlshare config [show|target|selfhost|defaults]\n\nFlags:\n  --target selfhost|cloud|vercel|cloudflare  发布目标（缺省自动探测）\n  --code C | --public                        自定义访问码 / 关闭门禁\n  --expires 7d | --no-expires                过期时间（缺省会询问；到期后不可访问）\n  --enhanced a2ui.json                       A2UI 组件树增强内容（缺省仅忠实版）\n  --style auto|clinical|minimal|editorial|darktech  主题（也可由 A2UI 文档内 theme 指定）\n  --title T                                  覆盖标题\n  --force                                    跳过转换缓存，强制重渲染\n");
     return 0;
   }
   if (parsed.command === "--version" || parsed.command === "-v") {

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { composePage, validateEnhanced } from "../src/compose.js";
+import { composePage, validateA2UI } from "../src/compose.js";
 import { convertFaithful } from "../src/convert.js";
 
 const source = `# 产品评审会纪要
@@ -12,28 +12,20 @@ const source = `# 产品评审会纪要
 
 - Q3 主打 X 功能
 - 保留轻量访问码
-
-## 行动项
-
-- Alice 周五前提交预算
-- Bob 下周完成原型走查
-
-## 讨论过程
-
-团队讨论了发布路径、风险和下一轮验收。
 `;
 
-function validEnhanced(overrides = {}) {
+function validDoc(overrides = {}) {
   return {
-    version: 1,
-    template: "meeting",
-    style: "clinical",
+    protocol: "a2ui/0.9-static",
+    theme: "clinical",
     title: "产品评审会纪要",
-    tldr: ["定了：Q3 主打 X 功能", "待定：预算需 CFO 批", "你要做：见行动项"],
-    sections: [
-      { slot: "conclusions", html: "<ul><li>Q3 主打 X 功能</li><li>保留轻量访问码</li></ul>" },
-      { slot: "actions", html: "<ul><li>Alice 周五前提交预算</li><li>Bob 下周完成原型走查</li></ul>" },
-      { slot: "discussion", html: "<details><summary>讨论过程</summary><p>团队讨论了发布路径、风险和下一轮验收，并保留原文对照。</p></details>" }
+    root: "c0",
+    dataModel: { rate: "92%" },
+    components: [
+      { id: "c0", component: "Column", children: ["hero", "stat", "note"] },
+      { id: "hero", component: "Hero", kicker: "产品评审", headline: "Q3 评审结论", meta: "2026-07-11" },
+      { id: "stat", component: "StatGrid", items: [{ value: { $path: "/rate" }, label: "完成率" }] },
+      { id: "note", component: "RichText", html: "<p>保留轻量访问码，并对照原文。</p>" }
     ],
     ...overrides
   };
@@ -41,11 +33,7 @@ function validEnhanced(overrides = {}) {
 
 test("composePage renders dual mode with toggle and exact faithful html", () => {
   const faithful = convertFaithful(source, "fb");
-  const { html, mode, validation } = composePage({
-    title: faithful.title,
-    faithfulHtml: faithful.html,
-    enhanced: validEnhanced()
-  });
+  const { html, mode, validation } = composePage({ title: faithful.title, faithfulHtml: faithful.html, enhanced: validDoc() });
 
   assert.equal(mode, "dual");
   assert.equal(validation.ok, true);
@@ -54,6 +42,12 @@ test("composePage renders dual mode with toggle and exact faithful html", () => 
   assert.match(html, /id="hs-enhanced"/);
   assert.match(html, new RegExp(`<section id="hs-faithful" class="hs-panel" hidden>${faithful.html.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}<\\/section>`));
   assert.doesNotMatch(html, /https?:\/\//);
+});
+
+test("data binding resolves $path against the dataModel", () => {
+  const { html } = composePage({ title: "t", faithfulHtml: "<p>x</p>", enhanced: validDoc() });
+  assert.match(html, /92%/);
+  assert.match(html, /hs-a2-hero/);
 });
 
 test("composePage without enhanced input renders faithful-only page without toggle", () => {
@@ -71,60 +65,64 @@ test("composePage directHtml returns html unchanged for encryption callers", () 
   assert.equal(composePage({ faithfulHtml: html, directHtml: true }).html, html);
 });
 
-test("V1 rejects invalid JSON or wrong version", () => {
-  assert.equal(validateEnhanced("{ nope").ok, false);
-  assert.match(validateEnhanced({ ...validEnhanced(), version: 2 }).errors.join("\n"), /V1/);
+test("style override wins over the A2UI doc theme", () => {
+  const { html } = composePage({ title: "t", faithfulHtml: "<p>x</p>", enhanced: validDoc({ theme: "clinical" }), styleOverride: "darktech" });
+  assert.match(html, /data-hs-style="darktech"/);
 });
 
-test("V2 rejects invalid template or style", () => {
-  const result = validateEnhanced(validEnhanced({ template: "minutes" }));
+test("A1 rejects invalid JSON and malformed docs (falls back to faithful)", () => {
+  assert.equal(validateA2UI("{ nope").ok, false);
+  assert.equal(validateA2UI({ theme: "clinical" }).ok, false); // no root/components
+  const page = composePage({ title: "t", faithfulHtml: "<p>正文</p>", enhanced: "{ broken" });
+  assert.equal(page.mode, "faithful");
+});
+
+test("A2 rejects a root that is not a defined component", () => {
+  const result = validateA2UI(validDoc({ root: "ghost" }));
   assert.equal(result.ok, false);
-  assert.match(result.errors.join("\n"), /V2/);
+  assert.match(result.errors.join("\n"), /A2/);
 });
 
-test("V3 drops illegal slots and keeps legal sections", () => {
-  const result = validateEnhanced(validEnhanced({
-    sections: [
-      { slot: "evil", html: "<p>drop</p>" },
-      { slot: "actions", html: "<p>keep action item with enough detail to pass the short faithful comparison easily.</p>" }
+test("A3 warns on a missing child reference but still renders siblings", () => {
+  const result = validateA2UI(validDoc({
+    components: [
+      { id: "c0", component: "Column", children: ["real", "ghost"] },
+      { id: "real", component: "Text", variant: "body", text: "在场" }
     ]
-  }), "short");
-
+  }));
   assert.equal(result.ok, true);
-  assert.equal(result.enhanced.sections.length, 1);
-  assert.equal(result.enhanced.sections[0].slot, "actions");
-  assert.match(result.warnings.join("\n"), /V3/);
+  assert.match(result.html, /在场/);
+  assert.match(result.warnings.join("\n"), /A3/);
 });
 
-test("V4 sanitizes script and event attributes in section html", () => {
-  const result = validateEnhanced(validEnhanced({
-    sections: [
-      { slot: "actions", html: '<p onclick="x()">keep</p><script>alert(1)</script>' }
+test("A4 skips unknown components with a warning", () => {
+  const result = validateA2UI(validDoc({
+    components: [
+      { id: "c0", component: "Column", children: ["ok", "weird"] },
+      { id: "ok", component: "Text", variant: "body", text: "正常" },
+      { id: "weird", component: "QuantumBlaster", text: "??" }
     ]
-  }), "tiny");
-
+  }));
   assert.equal(result.ok, true);
-  assert.doesNotMatch(result.enhanced.sections[0].html, /script|onclick|alert/i);
-  assert.match(result.enhanced.sections[0].html, /keep/);
+  assert.match(result.warnings.join("\n"), /A4/);
+  assert.doesNotMatch(result.html, /QuantumBlaster/);
 });
 
-test("V5 clips tldr count and item length", () => {
-  const long = "x".repeat(100);
-  const result = validateEnhanced(validEnhanced({ tldr: ["1", "2", "3", "4", "5", "6", long] }), "tiny");
-
+test("RichText and Callout sanitize script and event handlers", () => {
+  const result = validateA2UI(validDoc({
+    components: [
+      { id: "c0", component: "Column", children: ["r", "c"] },
+      { id: "r", component: "RichText", html: '<p onclick="x()">keep</p><script>alert(1)</script>' },
+      { id: "c", component: "Callout", tone: "danger", html: '<b>warn</b><img src="x" onerror="y()">' }
+    ]
+  }));
   assert.equal(result.ok, true);
-  assert.equal(result.enhanced.tldr.length, 5);
-  assert.ok(result.enhanced.tldr.every((item) => item.length <= 80));
-  assert.match(result.warnings.join("\n"), /V5/);
+  assert.doesNotMatch(result.html, /script|onclick|onerror|alert/i);
+  assert.match(result.html, /keep/);
+  assert.match(result.html, /hs-a2-callout-danger/);
 });
 
-test("V6 falls back when enhanced content is too short", () => {
-  const result = validateEnhanced(validEnhanced({
-    tldr: ["短"],
-    sections: [{ slot: "body", html: "<p>短</p>" }],
-    template: "generic"
-  }), "原文".repeat(100));
-
+test("A6 empty render falls back", () => {
+  const result = validateA2UI({ protocol: "a2ui/0.9-static", root: "c0", components: [{ id: "c0", component: "Column", children: [] }] });
   assert.equal(result.ok, false);
-  assert.match(result.errors.join("\n"), /V6/);
 });

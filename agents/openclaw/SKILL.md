@@ -25,28 +25,34 @@ htmlshare publish <file.html>
 ```
 
 3. If the file is Markdown, decide whether to create an enhanced view. Default to enhanced unless the user asks for faithful-only or time is tight.
-4. For enhancement, choose one template and one style. If the user explicitly sets `--template`, `--style`, or config defaults, obey the user even when the content appears mismatched.
+4. For enhancement, **compose an A2UI component tree** that fits the content — pick the components each section actually needs instead of a fixed template. Choose one theme. If the user explicitly sets `--style` or a config default, obey it.
 
-Templates: `generic`, `meeting`, `proposal`, `tutorial`, `release`.
-Styles: `clinical`, `minimal`, `editorial`, `darktech`.
+Themes: `clinical`, `minimal`, `editorial`, `darktech`.
 
-5. Write `enhanced.json` next to a temporary working file using this schema:
+Components: `Text`, `RichText`, `Column`, `Row`, `Grid`, `Card`, `Divider`, `List`, `Table`, `Image`, `Hero`, `StatGrid`, `Callout`, `Quote`, `Timeline`, `Tabs`, `Chart`, `Button`.
+
+5. Write `a2ui.json` next to a temporary working file using the A2UI static subset (a flat component list linked by id; containers reference children by id; `{ "$path": "/x" }` reads from `dataModel`):
 
 ```json
 {
-  "version": 1,
-  "template": "meeting",
-  "style": "clinical",
+  "protocol": "a2ui/0.9-static",
+  "theme": "clinical",
   "title": "产品评审会纪要",
-  "tldr": ["定了：Q3 主打 X", "待定：预算周五前批"],
-  "sections": [{ "slot": "conclusions", "html": "<ul><li>...</li></ul>" }]
+  "root": "c0",
+  "dataModel": { "rate": "92%" },
+  "components": [
+    { "id": "c0", "component": "Column", "children": ["hero", "stat", "note"] },
+    { "id": "hero", "component": "Hero", "kicker": "产品评审", "headline": "Q3 评审结论", "meta": "2026-07-11" },
+    { "id": "stat", "component": "StatGrid", "items": [{ "value": { "$path": "/rate" }, "label": "完成率" }] },
+    { "id": "note", "component": "RichText", "html": "<p>正文，仅白名单标签。</p>" }
+  ]
 }
 ```
 
 6. Run:
 
 ```bash
-htmlshare publish <file.md> --enhanced <enhanced.json>
+htmlshare publish <file.md> --enhanced <a2ui.json>
 ```
 
 If enhancement takes more than 60 seconds, skip it and run:
@@ -64,29 +70,28 @@ Red lines:
 - Never add opinions, interpretations, conclusions, or facts not present in the original. TL;DR items may summarize only what the source already says.
 - Preserve code blocks, quotes, and links exactly.
 
-Template rubric, checked from top to bottom. The first template with any 2 matching signals wins. If fewer than 2 signals match, use `generic`.
+Compose the tree to fit the content. Start with a top-level `Column`; a lead `Hero` for the title/context is usually right; then add the components each part needs. Containers (`Column`, `Row`, `Grid`, `Card`, `Tabs`) reference children by id.
 
-| Template | Signals |
+Component reference:
+
+| Component | Use for |
 |---|---|
-| `meeting` | attendees/time/place; decisions or action-item language such as "决定", "负责", "截止"; content proceeds by speaker or agenda topic; title contains meeting/notes/review/sync wording such as "会议", "纪要", "评审", "同步" |
-| `proposal` | states a problem and proposes a solution; has sections such as goal/solution/plan/budget/risk; tries to persuade a decision maker |
-| `tutorial` | proceeds through numbered steps; has prerequisites or environment requirements; mainly imperative instructions such as run/click/install |
-| `release` | starts with a version or date; includes change lists such as added/fixed/breaking changes; includes upgrade notes |
-| `generic` | none of the above, including essays, analysis, notes, and mixed content |
+| `Text{text,variant}` | headings (`h1`/`h2`/`h3`), body paragraphs, captions |
+| `RichText{html}` | prose with inline markup; only sanitize-whitelist tags survive |
+| `List{items,ordered?}` | bullet or numbered points |
+| `Table{headers,rows}` | real two-dimensional data (e.g. owner / task / deadline) |
+| `Hero{kicker,headline,meta}` | the document's lead banner |
+| `StatGrid{items:[{value,label}]}` | a few headline numbers |
+| `Callout{tone,html}` | a highlighted note — `info`/`warning`/`success`/`danger` |
+| `Quote{text,cite}` | a pulled quote |
+| `Timeline{items:[{title,detail,time}]}` | ordered events / discussion points |
+| `Tabs{tabs:[{label,children}]}` | alternative views side by side (CSS-only, no JS) |
+| `Chart{kind,series:[{label,value}]}` | numeric comparison — `bar`/`line`/`pie`, rendered as inline SVG |
+| `Card`/`Row`/`Grid`/`Divider`/`Image`/`Button` | grouping, layout, media, links |
 
-Slot sets must match the selected template exactly:
+Theme selection, unless the user configured or requested a style:
 
-| Template | Slots |
-|---|---|
-| `generic` | `body` |
-| `meeting` | `conclusions`, `actions`, `open_issues`, `discussion` |
-| `proposal` | `summary`, `problem`, `solution`, `plan`, `risks` |
-| `tutorial` | `overview`, `prerequisites`, `steps`, `faq` |
-| `release` | `highlights`, `changes`, `upgrade_notes` |
-
-Style selection, unless the user configured or requested a style:
-
-| Style | Use when |
+| Theme | Use when |
 |---|---|
 | `clinical` | business/client-facing material, meetings, proposals; restrained professional card layout; default when unsure |
 | `minimal` | pure text long reads, analysis, essays; typography does almost all the work |
@@ -95,23 +100,22 @@ Style selection, unless the user configured or requested a style:
 
 Content rules:
 
-- TL;DR must contain 1 to 5 items. Choose what the reader most needs to take away: conclusions first, then actions, then key data. Each item MUST be 40 characters or fewer (the CLI truncates longer items and warns).
-- Fill only slots that have source content. Omit empty slots; never invent material to fill a slot.
-- Use `<details>` only for process/background/raw/appendix content. Never hide primary conclusions, actions, risks, upgrade steps, or required instructions.
-- Use card groups only when there are at least 3 similar items.
-- Use tables only when the source has real two-dimensional data. Do not force prose into a table.
-- For meeting/proposal action items, extract owner, task, and deadline and join them with a full-width pipe `｜` in that order inside each `<li>`, e.g. `<li>Alice｜提交预算方案｜周五前</li>`. The CLI splits on `｜` to render the owner/task/deadline card; a list item without pipes renders as task-only with owner/deadline shown as `未指定`. If a field is genuinely missing, write `未指定`; do not guess.
-- For tutorial FAQ items, join question and answer with `｜`, e.g. `<li>如何回滚？｜执行 rollback 命令</li>`. For release change items, prefix with a label and separator so they group, e.g. `修复：登录失败` or `Fixed: login bug`.
+- Never change facts and never drop information; the enhanced tree must carry every information point the source has.
+- Only put HTML in `RichText`/`Callout` `html` fields, and only sanitize-whitelist tags — everything else is structured props, never raw HTML.
+- Use `Table` only when the source has real two-dimensional data. Do not force prose into a table.
+- Use `Chart` only when the source has real numeric series; otherwise use `StatGrid` or `List`.
+- Use card groups (`Grid` of `Card`) only when there are at least 3 similar items.
+- Images must be `https:` or `data:` sources (self-contained); local/relative image refs are skipped.
 
 ## Failure Fallbacks
 
 If the agent cannot produce `enhanced.json`, including headless mode, a weak model, or a user request to skip enhancement, publish without `--enhanced` and say this share is the faithful original version.
 
-If `enhanced.json` validation fails because JSON/schema or template/style enum checks fail, try once to fix it using the validation error. If it still fails, publish without `--enhanced` and include one short reason.
+If the A2UI JSON fails to validate (bad JSON, missing `root`/`components`, or unknown components), try once to fix it using the warning. If it still fails, publish without `--enhanced` and include one short reason.
 
 If enhancement takes more than 60 seconds, stop enhancing and publish without `--enhanced`.
 
-If the user requested a template or style that appears mismatched, obey the user and do not second-guess the choice.
+If the user requested a style that appears mismatched, obey the user and do not second-guess the choice.
 
 If upload fails, report the failure and mention that the rendered artifact is cached for retry.
 

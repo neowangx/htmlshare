@@ -1,25 +1,24 @@
 {
-  "version": 1,
-  "template": "tutorial",
-  "style": "darktech",
+  "protocol": "a2ui/0.9-static",
+  "theme": "clinical",
   "title": "本地启动 htmlshare 自托管服务",
-  "tldr": [
-    "先确认 Node.js 20 与依赖就绪",
-    "用 PORT 启动 server 并检查 healthz",
-    "配置 selfhost 后发布 Markdown"
-  ],
-  "sections": [
-    {
-      "slot": "prerequisites",
-      "html": "<ul><li>已安装 Node.js 20 或更高版本。</li><li>当前目录已经运行 <code>npm install</code>。</li><li>终端可以访问项目根目录。</li></ul>"
-    },
-    {
-      "slot": "steps",
-      "html": "<ol><li>运行 <code>npm test</code>，确认测试通过。</li><li>运行 <code>PORT=8787 node server/server.js</code> 启动服务。</li><li>打开 <code>http://localhost:8787/healthz</code>，确认返回 <code>ok</code>。</li><li>运行 <code>htmlshare config selfhost http://localhost:8787 &lt;token&gt;</code> 写入自托管目标。</li><li>运行 <code>htmlshare publish ./note.md --target selfhost</code> 发布一份 Markdown。</li></ol>"
-    },
-    {
-      "slot": "faq",
-      "html": "<ul><li>如果端口被占用，换一个 PORT 值重新启动。</li><li>如果发布返回 401，检查 token 是否与服务端环境变量一致。</li></ul>"
-    }
+  "root": "root",
+  "components": [
+    { "id": "root", "component": "Column", "children": ["hero", "prereq", "h-steps", "steps", "h-faq", "faq"] },
+    { "id": "hero", "component": "Hero", "kicker": "自托管教程", "headline": "本地启动 htmlshare 自托管服务" },
+    { "id": "prereq", "component": "Callout", "tone": "info", "html": "<strong>前置条件</strong>：Node.js 20+；当前目录已 <code>npm install</code>；终端可访问项目根目录。" },
+    { "id": "h-steps", "component": "Text", "variant": "h2", "text": "步骤" },
+    { "id": "steps", "component": "List", "ordered": true, "items": [
+      "运行 npm test，确认测试通过。",
+      "运行 PORT=8787 node server/server.js 启动服务。",
+      "打开 http://localhost:8787/healthz，确认返回 ok。",
+      "运行 htmlshare config selfhost http://localhost:8787 <token> 写入自托管目标。",
+      "运行 htmlshare publish ./note.md --target selfhost 发布一份 Markdown。"
+    ] },
+    { "id": "h-faq", "component": "Text", "variant": "h2", "text": "常见问题" },
+    { "id": "faq", "component": "List", "items": [
+      "端口被占用：换一个 PORT 值重新启动。",
+      "发布返回 401：检查 token 是否与服务端环境变量一致。"
+    ] }
   ]
 }

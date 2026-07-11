@@ -14,7 +14,7 @@ test("K-03 Codex wrapper is generated from SKILL.md key sections", () => {
     assert.match(codex, new RegExp(`## ${heading}`));
   }
   for (const phrase of [
-    "htmlshare publish <file.md> --enhanced <enhanced.json>",
+    "htmlshare publish <file.md> --enhanced <a2ui.json>",
     "Never change facts",
     "URL: <url>",
     "CODE: <code|none>"
@@ -33,7 +33,7 @@ test("K-04 Hermes and OpenClaw wrappers are generated from SKILL.md key sections
     assert.match(wrapper, /^---\nname: htmlshare/m);
     assert.match(wrapper, new RegExp(basis.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     for (const phrase of [
-      "htmlshare publish <file.md> --enhanced <enhanced.json>",
+      "htmlshare publish <file.md> --enhanced <a2ui.json>",
       "Never change facts",
       "URL: <url>",
       "CODE: <code|none>"
