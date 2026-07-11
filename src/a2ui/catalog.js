@@ -141,22 +141,37 @@ function timeline(node, ctx) {
   return rows ? `<ul class="hs-a2-timeline">${rows}</ul>` : "";
 }
 
-// CSS-only tabs: one radio per tab drives sibling panel visibility via :checked. Zero JS.
+export const TAB_MAX = 8;
+
+// CSS-only tabs: radios come first so a checked radio can reveal its matching label + panel by
+// nth-of-type pairing (see COMPONENT_CSS). All-radios-then-labels-then-panels keeps a single
+// global rule set working for any Tabs instance. Zero JS. Beyond TAB_MAX tabs the extras still
+// render but only the first TAB_MAX toggle.
 function tabs(node, ctx) {
   const list = Array.isArray(node.tabs) ? node.tabs : [];
   if (!list.length) return "";
   const group = ctx.uid("tabs");
-  const heads = [];
+  const radios = [];
+  const labels = [];
   const panels = [];
   list.forEach((tab, index) => {
     const id = `${group}-${index}`;
     const label = escapeHtml(str(ctx.resolve(tab?.label))) || `Tab ${index + 1}`;
     const checked = index === 0 ? " checked" : "";
-    heads.push(`<input type="radio" name="${group}" id="${id}" class="hs-a2-tabradio"${checked}><label for="${id}" class="hs-a2-tablabel">${label}</label>`);
+    radios.push(`<input type="radio" name="${group}" id="${id}" class="hs-a2-tabradio"${checked}>`);
+    labels.push(`<label for="${id}" class="hs-a2-tablabel">${label}</label>`);
     panels.push(`<div class="hs-a2-tabpanel">${ctx.renderChildren(tab?.children)}</div>`);
   });
-  return `<div class="hs-a2-tabs">${heads.join("")}${panels.join("")}</div>`;
+  return `<div class="hs-a2-tabs">${radios.join("")}${labels.join("")}${panels.join("")}</div>`;
 }
+
+// Pair the nth checked radio with the nth label (highlight) and nth panel (reveal). One rule
+// set covers every Tabs on the page because radios/labels/panels are grouped by element type.
+const TAB_CSS = Array.from({ length: TAB_MAX }, (_, i) => {
+  const k = i + 1;
+  return `.hs-a2-tabradio:nth-of-type(${k}):checked ~ .hs-a2-tablabel:nth-of-type(${k}){color:var(--hs-accent);border-bottom-color:var(--hs-accent)}`
+    + `.hs-a2-tabradio:nth-of-type(${k}):checked ~ .hs-a2-tabpanel:nth-of-type(${k}){display:block}`;
+}).join("\n");
 
 function chart(node, ctx) {
   try {
@@ -239,11 +254,10 @@ export const COMPONENT_CSS = `
 .hs-a2-tl-title { display: block; font-weight: 600; }
 .hs-a2-tl-detail { display: block; color: var(--hs-muted); font-size: 14px; }
 .hs-a2-tabs { display: flex; flex-wrap: wrap; border: 1px solid var(--hs-line); border-radius: var(--hs-radius-card); overflow: hidden; }
-.hs-a2-tabradio { position: absolute; opacity: 0; pointer-events: none; }
-.hs-a2-tablabel { padding: 10px 14px; cursor: pointer; color: var(--hs-muted); border-bottom: 2px solid transparent; }
-.hs-a2-tabpanel { display: none; order: 99; width: 100%; padding: 16px; border-top: 1px solid var(--hs-line); }
-.hs-a2-tabradio:checked + .hs-a2-tablabel { color: var(--hs-accent); border-bottom-color: var(--hs-accent); }
-.hs-a2-tabradio:checked + .hs-a2-tablabel + .hs-a2-tabpanel { display: block; }
+.hs-a2-tabradio { position: absolute; width: 0; height: 0; opacity: 0; pointer-events: none; }
+.hs-a2-tablabel { order: 1; padding: 10px 14px; cursor: pointer; color: var(--hs-muted); border-bottom: 2px solid transparent; }
+.hs-a2-tabpanel { order: 2; display: none; width: 100%; padding: 16px; border-top: 1px solid var(--hs-line); }
+${TAB_CSS}
 .hs-a2-button { display: inline-flex; align-items: center; padding: 8px 14px; border-radius: var(--hs-radius-control); background: var(--hs-accent); color: var(--hs-accent-ink); text-decoration: none; font-size: 14px; }
 .hs-a2-button-static { background: var(--hs-panel-subtle); color: var(--hs-muted); border: 1px solid var(--hs-line); }
 .hs-a2-media a { color: var(--hs-accent); }
