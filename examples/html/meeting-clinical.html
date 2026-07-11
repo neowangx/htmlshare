@@ -54,13 +54,9 @@ h1 { font-size: 28px; line-height: 1.2; margin: 0; letter-spacing: 0; }
 #hs-toggle button { border: 0; border-radius: calc(var(--hs-radius-control) - 2px); padding: 6px 10px; background: transparent; color: var(--hs-muted); cursor: pointer; font: inherit; transition: background 120ms ease-out, color 120ms ease-out; }
 #hs-toggle button[aria-pressed="true"] { background: var(--hs-accent); color: var(--hs-accent-ink); }
 .hs-panel { background: var(--hs-panel); border: 1px solid var(--hs-line); border-radius: var(--hs-radius-card); padding: 24px; box-shadow: var(--hs-shadow-card); }
-.hs-tldr { margin: 0 0 20px; padding: 16px 18px; border-left: 4px solid var(--hs-accent); background: var(--hs-accent-soft); }
-.hs-tldr h2, .hs-section h2 { font-size: 16px; margin: 0 0 10px; letter-spacing: 0; }
-.hs-tldr ul { margin: 0; padding-left: 20px; }
-.hs-section + .hs-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--hs-line); }
 .hs-footer { margin-top: 22px; color: var(--hs-muted); font-size: 13px; }
 table { border-collapse: collapse; width: 100%; }
-th, td { border: 1px solid var(--hs-line); padding: 6px 8px; }
+th, td { border: 1px solid var(--hs-line); padding: 6px 8px; text-align: left; }
 pre { overflow: auto; padding: 12px; background: var(--hs-code-bg); color: var(--hs-code-ink); border-radius: var(--hs-radius-control); }
 code { font-family: var(--hs-font-code); }
 .hljs-comment, .hljs-quote { color: var(--hs-muted); font-style: italic; }
@@ -70,24 +66,61 @@ code { font-family: var(--hs-font-code); }
 .hljs-emphasis { font-style: italic; }
 .hljs-strong { font-weight: 700; }
 img { max-width: 100%; height: auto; }
-.hs-action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
-.hs-action-card { border: 1px solid var(--hs-line); border-radius: var(--hs-radius-card); padding: 14px; background: var(--hs-panel-subtle); }
-.hs-action-card p { margin: 10px 0; }
-.hs-action-owner, .hs-action-due { display: inline-flex; color: var(--hs-muted); font-size: 13px; }
-.hs-action-owner { border: 1px solid var(--hs-line); border-radius: 999px; padding: 2px 8px; }
-.hs-steps li + li { margin-top: 8px; }
-.hs-faq-item + .hs-faq-item { margin-top: 10px; }
-.hs-change-group + .hs-change-group { margin-top: 14px; }
-.hs-change-badge { display: inline-flex; border: 1px solid var(--hs-line); border-radius: 999px; padding: 2px 8px; color: var(--hs-muted); font-size: 13px; }
 details > summary { cursor: pointer; }
 @media print { #hs-toggle { display: none; } details { display: block; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+
+
+.hs-a2-col { display: flex; flex-direction: column; gap: 16px; }
+.hs-a2-row { display: flex; flex-wrap: wrap; gap: 16px; }
+.hs-a2-row > * { flex: 1 1 200px; }
+.hs-a2-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.hs-a2-card { border: 1px solid var(--hs-line); border-radius: var(--hs-radius-card); padding: 16px; background: var(--hs-panel-subtle); }
+.hs-a2-caption { color: var(--hs-muted); font-size: 13px; }
+.hs-a2-rich > :first-child { margin-top: 0; }
+.hs-a2-rich > :last-child { margin-bottom: 0; }
+.hs-a2-divider { border: 0; border-top: 1px solid var(--hs-line); margin: 4px 0; }
+.hs-a2-list { margin: 0; padding-left: 20px; }
+.hs-a2-list li + li { margin-top: 6px; }
+.hs-a2-tablewrap { overflow-x: auto; }
+.hs-a2-img { display: block; max-width: 100%; height: auto; border-radius: var(--hs-radius-control); }
+.hs-a2-hero { padding: 8px 0 4px; }
+.hs-a2-kicker { margin: 0 0 6px; color: var(--hs-accent); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+.hs-a2-headline { margin: 0; font-size: 24px; line-height: 1.25; }
+.hs-a2-herometa { margin: 8px 0 0; color: var(--hs-muted); font-size: 13px; }
+.hs-a2-statgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.hs-a2-stat { border: 1px solid var(--hs-line); border-radius: var(--hs-radius-card); padding: 14px; background: var(--hs-panel-subtle); text-align: center; }
+.hs-a2-statval { display: block; font-size: 26px; font-weight: 700; color: var(--hs-ink); }
+.hs-a2-statlabel { display: block; margin-top: 4px; color: var(--hs-muted); font-size: 13px; }
+.hs-a2-callout { padding: 14px 16px; border-left: 4px solid var(--hs-accent); background: var(--hs-accent-soft); border-radius: 0 var(--hs-radius-control) var(--hs-radius-control) 0; }
+.hs-a2-callout > :first-child { margin-top: 0; } .hs-a2-callout > :last-child { margin-bottom: 0; }
+.hs-a2-callout-warning { border-left-color: #C88A00; background: color-mix(in srgb, #C88A00 12%, var(--hs-panel)); }
+.hs-a2-callout-success { border-left-color: #1F9D57; background: color-mix(in srgb, #1F9D57 12%, var(--hs-panel)); }
+.hs-a2-callout-danger { border-left-color: var(--hs-danger, #C23934); background: color-mix(in srgb, #C23934 12%, var(--hs-panel)); }
+.hs-a2-quote { margin: 0; padding: 8px 0 8px 16px; border-left: 3px solid var(--hs-line); color: var(--hs-ink); }
+.hs-a2-quote p { margin: 0; font-style: italic; } .hs-a2-quote cite { display: block; margin-top: 6px; color: var(--hs-muted); font-size: 13px; font-style: normal; }
+.hs-a2-timeline { list-style: none; margin: 0; padding: 0; }
+.hs-a2-tl-item { position: relative; padding: 0 0 14px 18px; border-left: 2px solid var(--hs-line); }
+.hs-a2-tl-item::before { content: ""; position: absolute; left: -5px; top: 4px; width: 8px; height: 8px; border-radius: 50%; background: var(--hs-accent); }
+.hs-a2-tl-time { display: block; color: var(--hs-muted); font-size: 12px; }
+.hs-a2-tl-title { display: block; font-weight: 600; }
+.hs-a2-tl-detail { display: block; color: var(--hs-muted); font-size: 14px; }
+.hs-a2-tabs { display: flex; flex-wrap: wrap; border: 1px solid var(--hs-line); border-radius: var(--hs-radius-card); overflow: hidden; }
+.hs-a2-tabradio { position: absolute; opacity: 0; pointer-events: none; }
+.hs-a2-tablabel { padding: 10px 14px; cursor: pointer; color: var(--hs-muted); border-bottom: 2px solid transparent; }
+.hs-a2-tabpanel { display: none; order: 99; width: 100%; padding: 16px; border-top: 1px solid var(--hs-line); }
+.hs-a2-tabradio:checked + .hs-a2-tablabel { color: var(--hs-accent); border-bottom-color: var(--hs-accent); }
+.hs-a2-tabradio:checked + .hs-a2-tablabel + .hs-a2-tabpanel { display: block; }
+.hs-a2-button { display: inline-flex; align-items: center; padding: 8px 14px; border-radius: var(--hs-radius-control); background: var(--hs-accent); color: var(--hs-accent-ink); text-decoration: none; font-size: 14px; }
+.hs-a2-button-static { background: var(--hs-panel-subtle); color: var(--hs-muted); border: 1px solid var(--hs-line); }
+.hs-a2-media a { color: var(--hs-accent); }
+.hs-chart { display: block; width: 100%; height: auto; max-width: 640px; margin: 4px 0; }
 </style>
 </head>
 <body data-hs-style="clinical">
 <main>
 <header class="hs-topbar"><h1>Q3 产品评审会议纪要</h1><div id="hs-toggle" role="group" aria-label="视图切换"><button type="button" data-view="faithful" aria-pressed="false">原文</button><button type="button" data-view="enhanced" aria-pressed="true">增强</button></div></header>
-<section id="hs-enhanced" class="hs-panel"><div class="hs-tldr"><h2>TL;DR</h2><ul><li>Q3 主推团队协作仪表盘</li><li>灰度名单 7 月 12 日前完成</li><li>预算上限 8 万元</li></ul></div><section class="hs-section" data-slot="conclusions"><h2>结论</h2><ul><li>决定 Q3 主推团队协作仪表盘，先覆盖销售和客服两个团队。</li><li>决定 7 月 12 日前完成灰度名单，由 Ada 负责。</li><li>决定预算上限为 8 万元，不新增外包。</li></ul></section><section class="hs-section" data-slot="actions"><h2>行动项</h2><div class="hs-action-grid"><article class="hs-action-card"><span class="hs-action-owner">Ada</span><p>整理灰度名单</p><span class="hs-action-due">2026-07-12</span></article><article class="hs-action-card"><span class="hs-action-owner">周宁</span><p>输出埋点清单</p><span class="hs-action-due">2026-07-10</span></article><article class="hs-action-card"><span class="hs-action-owner">李想</span><p>准备客户访谈问题</p><span class="hs-action-due">2026-07-09</span></article><article class="hs-action-card"><span class="hs-action-owner">小林</span><p>更新发布节奏表</p><span class="hs-action-due">2026-07-08</span></article></div></section><section class="hs-section" data-slot="discussion"><h2>讨论过程</h2><details><summary>讨论记录</summary><p>议题一：销售团队需要看线索响应时长，客服团队更关心升级工单数量。大家同意第一版只做共用指标，不做复杂权限。</p><p>议题二：周宁提醒埋点缺口较大，需要先补事件上报。Ada 认为灰度团队不要超过 20 人，避免支持压力过高。</p><p>议题三：李想建议把客户访谈放在灰度前一周完成，会议同意。</p></details></section></section>
+<section id="hs-enhanced" class="hs-panel"><div class="hs-a2-col"><header class="hs-a2-hero"><p class="hs-a2-kicker">产品评审</p><h2 class="hs-a2-headline">Q3 产品评审会议纪要</h2><p class="hs-a2-herometa">2026-07-05 · 线上 · 小林 / Ada / 周宁 / 李想</p></header><div class="hs-a2-statgrid"><div class="hs-a2-stat"><span class="hs-a2-statval">8万</span><span class="hs-a2-statlabel">预算上限</span></div><div class="hs-a2-stat"><span class="hs-a2-statval">7/12</span><span class="hs-a2-statlabel">灰度截止</span></div><div class="hs-a2-stat"><span class="hs-a2-statval">2</span><span class="hs-a2-statlabel">覆盖团队</span></div></div><h3>决议</h3><ol class="hs-a2-list"><li>Q3 主推团队协作仪表盘，先覆盖销售和客服两个团队。</li><li>7 月 12 日前完成灰度名单，由 Ada 负责。</li><li>预算上限 8 万元，不新增外包。</li></ol><h3>行动项</h3><div class="hs-a2-tablewrap"><table><thead><tr><th>负责人</th><th>事项</th><th>截止</th></tr></thead><tbody><tr><td>Ada</td><td>整理灰度名单</td><td>2026-07-12</td></tr><tr><td>周宁</td><td>输出埋点清单</td><td>2026-07-10</td></tr><tr><td>李想</td><td>准备客户访谈问题</td><td>2026-07-09</td></tr><tr><td>小林</td><td>更新发布节奏表</td><td>2026-07-08</td></tr></tbody></table></div><h3>讨论记录</h3><ul class="hs-a2-timeline"><li class="hs-a2-tl-item"><span class="hs-a2-tl-title">指标口径</span><span class="hs-a2-tl-detail">销售看线索响应时长，客服看升级工单；第一版只做共用指标，不做复杂权限。</span></li><li class="hs-a2-tl-item"><span class="hs-a2-tl-title">埋点与灰度</span><span class="hs-a2-tl-detail">埋点缺口较大需先补事件上报；灰度团队不超过 20 人以控支持压力。</span></li><li class="hs-a2-tl-item"><span class="hs-a2-tl-title">客户访谈</span><span class="hs-a2-tl-detail">客户访谈放在灰度前一周完成，会议同意。</span></li></ul></div></section>
 <section id="hs-faithful" class="hs-panel" hidden><h1 id="q3-%E4%BA%A7%E5%93%81%E8%AF%84%E5%AE%A1%E4%BC%9A%E8%AE%AE%E7%BA%AA%E8%A6%81">Q3 产品评审会议纪要</h1>
 <p>时间：2026-07-05 10:00
 地点：线上会议

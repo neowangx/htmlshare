@@ -80,21 +80,27 @@ htmlshare config [target|selfhost|show]
 - 成功时 stdout 最后两行固定为 `URL: <url>` 与 `CODE: <code|none>`（供 agent 可靠提取）。
 - 退出码：0 成功；2 输入错误；3 无可用目标；4 上传失败（产物已暂存）；5 撤回未确认。
 
-## 4. 增强片段契约（agent → CLI，D6）
+## 4. 增强片段契约（agent → CLI，A2UI 静态子集，D6）
 
-`enhanced.json`（完整校验规则见 docs/05 §5）：
+增强内容采用 **A2UI v0.9 协议的静态子集**（见 docs/11）：模型输出一棵组件树（扁平列表 + ID 引用建树），CLI 在发布时解析数据绑定、丢弃交互，渲染成单文件静态 HTML。完整组件与主题枚举见 §8。
 
 ```json
 {
-  "version": 1,
-  "template": "meeting",              // 见 §8 模板枚举
-  "style": "clinical",                // 见 §8 风格枚举
+  "protocol": "a2ui/0.9-static",
+  "theme": "clinical",                 // 见 §8 主题枚举；也可省略，由 --style 决定
   "title": "产品评审会纪要",
-  "tldr": ["定了：Q3 主打 X", "待定：预算周五前批"],   // 1~5 条
-  "sections": [ { "slot": "conclusions", "html": "<ul>...</ul>" } ]
+  "root": "c0",
+  "dataModel": { "rate": "92%" },      // 可选：Dynamic 属性 { "$path": "/rate" } 的取值来源
+  "components": [
+    { "id": "c0", "component": "Column", "children": ["hero", "stat"] },
+    { "id": "hero", "component": "Hero", "kicker": "产品评审", "headline": "Q3 评审结论" },
+    { "id": "stat", "component": "StatGrid", "items": [ { "value": { "$path": "/rate" }, "label": "完成率" } ] }
+  ]
 }
 ```
-`sections[].html` 仅允许 sanitize 白名单标签 + `<details>/<summary>`；`slot` 必须属于所选模板的槽位集（§8）。
+
+- **不变量**：模型只给类型化组件 + 结构化属性；HTML 全部由渲染器产出。唯一自由文本入口是 `RichText`/`Callout` 的 html 字段，强制走 sanitize 白名单。
+- **降级（D6）**：JSON 非法 / `root` 缺失 / `components` 为空 → 回退忠实版；未知组件 / 悬空 ID 引用 → 跳过并告警；`Chart` 数据不可用 → 降级为表格；音视频/Lottie → 降级为链接或静态图。发布永不因增强失败而中断。
 
 ## 5. 适配器接口（src/adapters/*，D3）
 
@@ -167,17 +173,16 @@ usage_events (id PK, owner_id, kind TEXT/*publish|view*/, page_id, at)
 ```
 索引：`pages(owner_id)`、`usage_events(owner_id, at)`。
 
-## 8. 模板 / 风格 / 槽位枚举（跨文档统一，禁止别名）
+## 8. A2UI 组件 / 主题枚举（跨文档统一，禁止别名）
 
-- **模板** `generic | meeting | proposal | tutorial | release`
-- **风格** `clinical | minimal | editorial | darktech`
-- **槽位**：
-  - generic: `body`
-  - meeting: `conclusions, actions, open_issues, discussion`
-  - proposal: `summary, problem, solution, plan, risks`
-  - tutorial: `overview, prerequisites, steps, faq`
-  - release: `highlights, changes, upgrade_notes`
-- 所有模板隐含公共区：`tldr`（数组渲染）、`title`、双模式开关、页脚。
+- **主题** `clinical|minimal|editorial|darktech`（另有 auto，表示交给 CLI 或 A2UI theme 决定）
+- **组件** `Text|RichText|Column|Row|Grid|Card|Divider|List|Table|Image|Hero|StatGrid|Callout|Quote|Timeline|Tabs|Chart|Button`
+- **容器**（用 `children: [id...]` 引用子组件）：`Column`（纵排）、`Row`（横排）、`Grid`（自适应网格）、`Card`（面板）、`Tabs`（CSS-only 标签页，`tabs:[{label,children}]`）。
+- **内容**：`Text{text,variant:h1|h2|h3|body|caption}`、`RichText{html}`、`List{items[],ordered?}`、`Table{headers[],rows[][]}`、`Divider`、`Image{src,alt}`（仅 https/data 源）。
+- **强调块**：`Hero{kicker?,headline,meta?}`、`StatGrid{items:[{value,label}]}`、`Callout{tone:info|warning|success|danger,html}`、`Quote{text,cite?}`、`Timeline{items:[{title,detail?,time?}]}`。
+- **数据可视化**：`Chart{kind:line|bar|pie,series:[{label,value}]}` → 发布时内联 SVG。
+- **降级**：`Button{text,href?}`（无 URL 则降级为静态标签）；`Audio/Video/Lottie` 降级为链接。
+- 公共区：`title`、双模式（增强/原文）开关、页脚由包壳层统一提供。
 
 ## 9. 静态加密包格式（encrypt.js ↔ 壳内解密 JS）
 

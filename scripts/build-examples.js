@@ -35,7 +35,7 @@ for (const [fixture, file] of sources) {
 for (const page of pages) {
   const md = readFileSync(join(fixtureDir, `${page.fixture}.md`), "utf8");
   const enhanced = JSON.parse(readFileSync(join(fixtureDir, `${page.fixture}.enhanced.json`), "utf8"));
-  enhanced.style = page.style;
+  enhanced.theme = page.style;
   const faithful = convertFaithful(md, page.file);
   const { html, validation } = composePage({
     title: faithful.title,

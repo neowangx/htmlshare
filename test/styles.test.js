@@ -88,32 +88,22 @@ test("C-14 editorial and darktech body contrast passes 4.5", () => {
   assert.match(composePage({ title: "Dark", faithfulHtml: "<p>正文</p>", style: "darktech" }).html, /color-scheme: dark;/);
 });
 
-test("C-14 all style and template combinations render without external resources", () => {
-  const templates = ["generic", "meeting", "proposal", "tutorial", "release"];
-  const sectionByTemplate = {
-    generic: [{ slot: "body", html: "<p>正文内容足够长，正文内容足够长。</p>" }],
-    meeting: [{ slot: "conclusions", html: "<p>结论内容足够长，结论内容足够长。</p>" }],
-    proposal: [{ slot: "summary", html: "<p>摘要内容足够长，摘要内容足够长。</p>" }],
-    tutorial: [{ slot: "overview", html: "<p>概览内容足够长，概览内容足够长。</p>" }],
-    release: [{ slot: "highlights", html: "<p>亮点内容足够长，亮点内容足够长。</p>" }]
-  };
+test("C-14 all styles render A2UI content without external resources", () => {
+  const componentSets = [
+    [{ id: "c0", component: "Column", children: ["a", "b"] }, { id: "a", component: "Hero", headline: "标题足够长的一个标题" }, { id: "b", component: "RichText", html: "<p>正文内容足够长，正文内容足够长，正文内容足够长。</p>" }],
+    [{ id: "c0", component: "StatGrid", items: [{ value: "92%", label: "完成率内容足够长" }, { value: "3", label: "风险项内容足够长" }] }],
+    [{ id: "c0", component: "Chart", kind: "bar", series: [{ label: "A", value: 12 }, { label: "B", value: 8 }] }]
+  ];
 
   for (const style of list()) {
-    for (const template of templates) {
+    for (const components of componentSets) {
       const { html, mode, validation } = composePage({
-        title: `${template}-${style}`,
+        title: `doc-${style}`,
         faithfulHtml: "<p>原文内容足够长，原文内容足够长，原文内容足够长。</p>",
-        enhanced: {
-          version: 1,
-          template,
-          style,
-          title: `${template}-${style}`,
-          tldr: ["组合渲染正常"],
-          sections: sectionByTemplate[template]
-        }
+        enhanced: { protocol: "a2ui/0.9-static", theme: style, title: `doc-${style}`, root: "c0", components }
       });
-      assert.equal(mode, "dual", `${template}/${style}`);
-      assert.equal(validation.ok, true, `${template}/${style}`);
+      assert.equal(mode, "dual", `${style}`);
+      assert.equal(validation.ok, true, `${style}`);
       assert.doesNotMatch(html, /https?:\/\//);
       assert.doesNotMatch(html, /@import|url\(/);
       assert.match(html, new RegExp(`data-hs-style="${style}"`));

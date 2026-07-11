@@ -53,13 +53,9 @@ h1 { font-size: 28px; line-height: 1.2; margin: 0; letter-spacing: 0; }
 #hs-toggle button { border: 0; border-radius: calc(var(--hs-radius-control) - 2px); padding: 6px 10px; background: transparent; color: var(--hs-muted); cursor: pointer; font: inherit; transition: background 120ms ease-out, color 120ms ease-out; }
 #hs-toggle button[aria-pressed="true"] { background: var(--hs-accent); color: var(--hs-accent-ink); }
 .hs-panel { background: var(--hs-panel); border: 1px solid var(--hs-line); border-radius: var(--hs-radius-card); padding: 24px; box-shadow: var(--hs-shadow-card); }
-.hs-tldr { margin: 0 0 20px; padding: 16px 18px; border-left: 4px solid var(--hs-accent); background: var(--hs-accent-soft); }
-.hs-tldr h2, .hs-section h2 { font-size: 16px; margin: 0 0 10px; letter-spacing: 0; }
-.hs-tldr ul { margin: 0; padding-left: 20px; }
-.hs-section + .hs-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--hs-line); }
 .hs-footer { margin-top: 22px; color: var(--hs-muted); font-size: 13px; }
 table { border-collapse: collapse; width: 100%; }
-th, td { border: 1px solid var(--hs-line); padding: 6px 8px; }
+th, td { border: 1px solid var(--hs-line); padding: 6px 8px; text-align: left; }
 pre { overflow: auto; padding: 12px; background: var(--hs-code-bg); color: var(--hs-code-ink); border-radius: var(--hs-radius-control); }
 code { font-family: var(--hs-font-code); }
 .hljs-comment, .hljs-quote { color: var(--hs-muted); font-style: italic; }
@@ -69,24 +65,61 @@ code { font-family: var(--hs-font-code); }
 .hljs-emphasis { font-style: italic; }
 .hljs-strong { font-weight: 700; }
 img { max-width: 100%; height: auto; }
-.hs-action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
-.hs-action-card { border: 1px solid var(--hs-line); border-radius: var(--hs-radius-card); padding: 14px; background: var(--hs-panel-subtle); }
-.hs-action-card p { margin: 10px 0; }
-.hs-action-owner, .hs-action-due { display: inline-flex; color: var(--hs-muted); font-size: 13px; }
-.hs-action-owner { border: 1px solid var(--hs-line); border-radius: 999px; padding: 2px 8px; }
-.hs-steps li + li { margin-top: 8px; }
-.hs-faq-item + .hs-faq-item { margin-top: 10px; }
-.hs-change-group + .hs-change-group { margin-top: 14px; }
-.hs-change-badge { display: inline-flex; border: 1px solid var(--hs-line); border-radius: 999px; padding: 2px 8px; color: var(--hs-muted); font-size: 13px; }
 details > summary { cursor: pointer; }
 @media print { #hs-toggle { display: none; } details { display: block; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+
+
+.hs-a2-col { display: flex; flex-direction: column; gap: 16px; }
+.hs-a2-row { display: flex; flex-wrap: wrap; gap: 16px; }
+.hs-a2-row > * { flex: 1 1 200px; }
+.hs-a2-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.hs-a2-card { border: 1px solid var(--hs-line); border-radius: var(--hs-radius-card); padding: 16px; background: var(--hs-panel-subtle); }
+.hs-a2-caption { color: var(--hs-muted); font-size: 13px; }
+.hs-a2-rich > :first-child { margin-top: 0; }
+.hs-a2-rich > :last-child { margin-bottom: 0; }
+.hs-a2-divider { border: 0; border-top: 1px solid var(--hs-line); margin: 4px 0; }
+.hs-a2-list { margin: 0; padding-left: 20px; }
+.hs-a2-list li + li { margin-top: 6px; }
+.hs-a2-tablewrap { overflow-x: auto; }
+.hs-a2-img { display: block; max-width: 100%; height: auto; border-radius: var(--hs-radius-control); }
+.hs-a2-hero { padding: 8px 0 4px; }
+.hs-a2-kicker { margin: 0 0 6px; color: var(--hs-accent); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+.hs-a2-headline { margin: 0; font-size: 24px; line-height: 1.25; }
+.hs-a2-herometa { margin: 8px 0 0; color: var(--hs-muted); font-size: 13px; }
+.hs-a2-statgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.hs-a2-stat { border: 1px solid var(--hs-line); border-radius: var(--hs-radius-card); padding: 14px; background: var(--hs-panel-subtle); text-align: center; }
+.hs-a2-statval { display: block; font-size: 26px; font-weight: 700; color: var(--hs-ink); }
+.hs-a2-statlabel { display: block; margin-top: 4px; color: var(--hs-muted); font-size: 13px; }
+.hs-a2-callout { padding: 14px 16px; border-left: 4px solid var(--hs-accent); background: var(--hs-accent-soft); border-radius: 0 var(--hs-radius-control) var(--hs-radius-control) 0; }
+.hs-a2-callout > :first-child { margin-top: 0; } .hs-a2-callout > :last-child { margin-bottom: 0; }
+.hs-a2-callout-warning { border-left-color: #C88A00; background: color-mix(in srgb, #C88A00 12%, var(--hs-panel)); }
+.hs-a2-callout-success { border-left-color: #1F9D57; background: color-mix(in srgb, #1F9D57 12%, var(--hs-panel)); }
+.hs-a2-callout-danger { border-left-color: var(--hs-danger, #C23934); background: color-mix(in srgb, #C23934 12%, var(--hs-panel)); }
+.hs-a2-quote { margin: 0; padding: 8px 0 8px 16px; border-left: 3px solid var(--hs-line); color: var(--hs-ink); }
+.hs-a2-quote p { margin: 0; font-style: italic; } .hs-a2-quote cite { display: block; margin-top: 6px; color: var(--hs-muted); font-size: 13px; font-style: normal; }
+.hs-a2-timeline { list-style: none; margin: 0; padding: 0; }
+.hs-a2-tl-item { position: relative; padding: 0 0 14px 18px; border-left: 2px solid var(--hs-line); }
+.hs-a2-tl-item::before { content: ""; position: absolute; left: -5px; top: 4px; width: 8px; height: 8px; border-radius: 50%; background: var(--hs-accent); }
+.hs-a2-tl-time { display: block; color: var(--hs-muted); font-size: 12px; }
+.hs-a2-tl-title { display: block; font-weight: 600; }
+.hs-a2-tl-detail { display: block; color: var(--hs-muted); font-size: 14px; }
+.hs-a2-tabs { display: flex; flex-wrap: wrap; border: 1px solid var(--hs-line); border-radius: var(--hs-radius-card); overflow: hidden; }
+.hs-a2-tabradio { position: absolute; opacity: 0; pointer-events: none; }
+.hs-a2-tablabel { padding: 10px 14px; cursor: pointer; color: var(--hs-muted); border-bottom: 2px solid transparent; }
+.hs-a2-tabpanel { display: none; order: 99; width: 100%; padding: 16px; border-top: 1px solid var(--hs-line); }
+.hs-a2-tabradio:checked + .hs-a2-tablabel { color: var(--hs-accent); border-bottom-color: var(--hs-accent); }
+.hs-a2-tabradio:checked + .hs-a2-tablabel + .hs-a2-tabpanel { display: block; }
+.hs-a2-button { display: inline-flex; align-items: center; padding: 8px 14px; border-radius: var(--hs-radius-control); background: var(--hs-accent); color: var(--hs-accent-ink); text-decoration: none; font-size: 14px; }
+.hs-a2-button-static { background: var(--hs-panel-subtle); color: var(--hs-muted); border: 1px solid var(--hs-line); }
+.hs-a2-media a { color: var(--hs-accent); }
+.hs-chart { display: block; width: 100%; height: auto; max-width: 640px; margin: 4px 0; }
 </style>
 </head>
 <body data-hs-style="editorial">
 <main>
 <header class="hs-topbar"><h1>清晨的工作笔记</h1><div id="hs-toggle" role="group" aria-label="视图切换"><button type="button" data-view="faithful" aria-pressed="false">原文</button><button type="button" data-view="enhanced" aria-pressed="true">增强</button></div></header>
-<section id="hs-enhanced" class="hs-panel"><div class="hs-tldr"><h2>TL;DR</h2><ul><li>工具应把注意力还给内容本身</li><li>原文需要始终可返回</li><li>默认值应温和而不过度替用户决定</li><li>边界处的诚实会带来可信感</li></ul></div><section class="hs-section" data-slot="body"><h2>正文</h2><p>今天早上先把桌面清理了一遍，又把昨天没有写完的想法重新读了一遍。它们并不是一个完整的方案，更像是几段互相靠近的观察：工具要让人更容易把注意力放回内容本身，分享链接不应该抢走读者的视线，访问码也只是一层轻量保护。</p><p>我反复想到一个小细节：如果一份文档被转成网页，读者第一眼应该看到的是标题、重点和正文节奏，而不是发布工具的存在。工具需要有自己的判断，但不能让判断覆盖原文。原文应该始终在那里，像一条可以返回的路。</p><p>另一个想法是关于默认值。好的默认值不是替用户做所有决定，而是让大多数普通场景不用停下来配置。默认托管、默认样式、默认访问码都应该尽量温和，等用户真的需要更多控制时，再把选项露出来。</p><p>最后记下一句提醒：产品的可信感，常常来自它在边界处的诚实。能做什么、不能做什么、什么时候需要用户自己设置服务器，都应该说清楚。</p></section></section>
+<section id="hs-enhanced" class="hs-panel"><div class="hs-a2-col"><header class="hs-a2-hero"><p class="hs-a2-kicker">随笔</p><h2 class="hs-a2-headline">清晨的工作笔记</h2></header><div class="hs-a2-rich"><p>今天早上先把桌面清理了一遍，又把昨天没有写完的想法重新读了一遍。它们并不是一个完整的方案，更像是几段互相靠近的观察：工具要让人更容易把注意力放回内容本身，分享链接不应该抢走读者的视线，访问码也只是一层轻量保护。</p></div><div class="hs-a2-rich"><p>如果一份文档被转成网页，读者第一眼应该看到的是标题、重点和正文节奏，而不是发布工具的存在。工具需要有自己的判断，但不能让判断覆盖原文。原文应该始终在那里，像一条可以返回的路。</p></div><div class="hs-a2-rich"><p>好的默认值不是替用户做所有决定，而是让大多数普通场景不用停下来配置。默认托管、默认样式、默认访问码都应该尽量温和，等用户真的需要更多控制时，再把选项露出来。</p></div><blockquote class="hs-a2-quote"><p>产品的可信感，常常来自它在边界处的诚实。</p><cite>清晨的工作笔记</cite></blockquote></div></section>
 <section id="hs-faithful" class="hs-panel" hidden><h1 id="%E6%B8%85%E6%99%A8%E7%9A%84%E5%B7%A5%E4%BD%9C%E7%AC%94%E8%AE%B0">清晨的工作笔记</h1>
 <p>今天早上先把桌面清理了一遍，又把昨天没有写完的想法重新读了一遍。它们并不是一个完整的方案，更像是几段互相靠近的观察：工具要让人更容易把注意力放回内容本身，分享链接不应该抢走读者的视线，访问码也只是一层轻量保护。</p>
 <p>我反复想到一个小细节：如果一份文档被转成网页，读者第一眼应该看到的是标题、重点和正文节奏，而不是发布工具的存在。工具需要有自己的判断，但不能让判断覆盖原文。原文应该始终在那里，像一条可以返回的路。</p>
