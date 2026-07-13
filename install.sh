@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_URL="${HTMLSHARE_REPO_URL:-https://github.com/neomini/htmlshare.git}"
+REPO_URL="${HTMLSHARE_REPO_URL:-https://github.com/neowangx/htmlshare.git}"
 SOURCE_DIR="${HTMLSHARE_SOURCE_DIR:-}"
 INSTALL_DIR="${HTMLSHARE_INSTALL_DIR:-$HOME/.htmlshare}"
 BIN_DIR="${HTMLSHARE_BIN_DIR:-$HOME/.local/bin}"
