@@ -94,13 +94,14 @@ export async function publish({ html, id = null, meta = {}, config } = {}) {
   // on create, or when the caller explicitly changes the code (meta.setCode).
   if (!id || meta.setCode) body.code = meta.code ?? null;
 
-  if (id) {
-    const result = await request(`/api/pages/${encodeURIComponent(id)}`, { method: "PUT", body, config });
-    const settings = selfhostConfig(config);
-    return { id, url: `${normalizeBaseUrl(settings.baseUrl)}/s/${id}/`, version: result.version };
-  }
-
-  return request("/api/pages", { method: "POST", body, config });
+  const path = id ? `/api/pages/${encodeURIComponent(id)}` : "/api/pages";
+  const result = await request(path, { method: id ? "PUT" : "POST", body, config });
+  // The share URL always comes from the configured baseUrl, never from the server's response:
+  // this is the user's own host, so their config is the authority on how it should be reached
+  // (www vs apex). The server derives its own base from PUBLIC_BASE, falling back to a plain
+  // http:// host header — trusting that would hand out links on the wrong domain or scheme.
+  const shareId = id || result.id;
+  return { id: shareId, url: `${normalizeBaseUrl(selfhostConfig(config).baseUrl)}/s/${shareId}/`, version: result.version };
 }
 
 export async function setExpiry({ id, expiresAt = null, config } = {}) {

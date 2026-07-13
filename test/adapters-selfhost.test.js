@@ -59,6 +59,19 @@ test("selfhost publish POST sends bearer token and request body", async () => {
   });
 });
 
+test("selfhost publish builds the share URL from baseUrl, not the server response", async () => {
+  await withServer(async (request, response) => {
+    response.writeHead(201, { "content-type": "application/json" });
+    // A server whose PUBLIC_BASE is unset (or set to the apex while the user shares www)
+    // answers with the wrong host and scheme; the adapter must not pass that through.
+    response.end(JSON.stringify({ id: "k3f9m2", url: "http://apex.example/s/k3f9m2/", version: 1 }));
+  }, async (baseUrl) => {
+    const result = await selfhost.publish({ html: "x", meta: {}, config: config(`${baseUrl}/`) });
+    assert.equal(result.url, `${baseUrl}/s/k3f9m2/`);
+    assert.equal(result.version, 1);
+  });
+});
+
 test("selfhost publish PUT updates existing id", async () => {
   await withServer(async (request, response) => {
     assert.equal(request.method, "PUT");
