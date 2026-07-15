@@ -40,8 +40,37 @@ test("composePage renders dual mode with toggle and exact faithful html", () => 
   assert.match(html, /<meta name="robots" content="noindex">/);
   assert.match(html, /id="hs-toggle"/);
   assert.match(html, /id="hs-enhanced"/);
+  assert.match(html, /<nav id="hs-toc"[^>]* hidden>/);
+  assert.match(html, /class="hs-enhanced-content"/);
   assert.match(html, new RegExp(`<section id="hs-faithful" class="hs-panel" hidden>${faithful.html.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}<\\/section>`));
   assert.doesNotMatch(html, /https?:\/\//);
+});
+
+test("long enhanced content ships viewport-aware clickable TOC behavior", () => {
+  const { html } = composePage({
+    title: "长文",
+    faithfulHtml: "<p>原文</p>",
+    enhanced: validDoc({
+      components: [
+        { id: "c0", component: "Column", children: ["intro", "one", "body1", "two", "body2"] },
+        { id: "intro", component: "Hero", headline: "长文标题" },
+        { id: "one", component: "Text", variant: "h1", text: "第一章" },
+        { id: "body1", component: "RichText", html: "<p>第一章正文</p>" },
+        { id: "two", component: "Text", variant: "h1", text: "第二章" },
+        { id: "body2", component: "RichText", html: "<p>第二章正文</p>" }
+      ]
+    })
+  });
+
+  assert.match(html, /content\.scrollHeight > window\.innerHeight \* 2/);
+  assert.match(html, /h2:not\(\.hs-a2-headline\), h3, h4/);
+  assert.match(html, /link\.href = "#" \+ encodeURIComponent\(id\)/);
+  assert.match(html, /section\.classList\.toggle\("hs-has-toc", show\)/);
+  assert.match(html, /@media \(max-width: 720px\)/);
+
+  const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]);
+  assert.equal(scripts.length, 1);
+  assert.doesNotThrow(() => new Function(scripts[0]));
 });
 
 test("data binding resolves $path against the dataModel", () => {
@@ -57,6 +86,7 @@ test("composePage without enhanced input renders faithful-only page without togg
   assert.equal(mode, "faithful");
   assert.doesNotMatch(html, /id="hs-toggle"/);
   assert.doesNotMatch(html, /id="hs-enhanced"/);
+  assert.doesNotMatch(html, /id="hs-toc"/);
   assert.match(html, /id="hs-faithful"/);
 });
 

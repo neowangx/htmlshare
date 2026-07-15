@@ -36,6 +36,7 @@
 | C-13 | M3 | 模板 release | C-05, U-03 | done | 新增 release 专用模板 renderer：highlights/changes/upgrade_notes 按序渲染，changes 支持新增/修复/破坏性/其他分组徽标，缺失 upgrade_notes 不渲染空标题；`npm test` 通过（138 tests）。 |
 | C-14 | M3 | 风格 editorial + darktech | C-06, U-03 | done | 新增 editorial/darktech 两套 token 风格，style registry 补齐 4 枚举；覆盖 editorial/darktech 对比度、零外链与 4 风格 × 5 模板组合冒烟；`npm test` 通过（141 tests）；人工项待验：H5/H17 视觉走查。 |
 | C-15 | M3 | 高级设置 config | C-07 | done | 实现 `config show/target/selfhost/defaults`，show 脱敏 token 后 4 位；publish 读取 defaults 与 footerBadge；覆盖设置写入、脱敏、默认模板/风格/访问码生效；`npm test` 通过（106 tests）。 |
+| C-16 | M3 | 长增强内容自动目录导航 | C-04, U-03 | done | 增强正文超过两屏且至少有 2 个章节标题时自动显示可点击目录；桌面吸顶侧栏、窄屏正文上方、短文隐藏；Playwright 验证跳转/切换/响应式通过，`npm test` 187/187 通过。 |
 | K-05 | M3 | SKILL.md 完整增强规则 | K-01, C-10~C-14 | done | 将 docs/05 §2~§4/§6 完整落入主 `SKILL.md`，并重生成 Codex/OpenClaw/Hermes 封装；新增 docs/05 样例 A/B/C 固定资产与 template 判定断言、docs/04 §8 枚举 diff 断言；`npm test` 通过（145 tests）；人工项待验：H18 版式质量走查。 |
 | G-02 | M4 | GitHub 仓库与 CI（CI 可 M1 后早启） | C-01; Q4 | done | 已创建 GitHub 私有仓库 `neowangx/htmlshare`，默认分支 `main`；推送当前仓库并加入 Actions CI（Node 20/22），`gh run watch 28874002338` 确认 main CI 成功；远端检查确认 `../htmlshare-cloud` 未配置 remote、未随公开仓泄漏；分支保护因 GitHub 私有仓需 Pro/公开仓返回 403，见 H19。 |
 | G-01 | M4 | README 与文档 | K-05 | done | 新增中英双语 README、server/README、自证概览图 `examples/screenshots/overview.svg`；README 明确官方云服务端不开源、默认 100MB 免费空间、访问码非强安全；新增 README doctest/死链/声明断言；`npm test` 通过（148 tests）。 |
@@ -58,3 +59,4 @@
 - M1 MVP 自托管闭环：2026-07-05 可自证项达成。证据：U-03 原型门禁已由用户确认并写入 docs/00；C-04~C-07/P-01/S-01~S-03/S-05/K-01 全部 done；`npm test` 通过（73 tests）；人工项待验：H14 Claude Code 实测话术与 H3 真机自托管联调。
 - M2 静态平台 + 多 agent：2026-07-04 可自证项达成。证据：C-08/C-09/P-02/P-03/P-04/S-04/K-02/K-03/K-04 全部 done；`npm test` 通过（102 tests）；`docker build` + selfhost 容器 `/healthz` 冒烟通过；install.sh 干净 HOME 沙箱幂等安装通过；人工项待验：H1/H2/H3/H4 真实目标/agent 联调。
 - M3 模板风格完备：2026-07-05 达成。证据：C-10~C-15/K-05 全部 done；5 模板 × 4 风格组合冒烟、docs/05 样例 A/B/C rubric 判定、风格对比度断言均已纳入测试；开源仓 `npm test` 通过（151 tests）；人工项待验：H16/H17/H18 视觉与版式走查。
+- M3 增量 C-16：2026-07-15 达成。证据：真实浏览器覆盖长/短内容、桌面/窄屏、目录点击跳转及原文/增强往返；开源仓 `npm test` 187/187 通过。

@@ -200,4 +200,5 @@ usage_events (id PK, owner_id, kind TEXT/*publish|view*/, page_id, at)
 ## 10. 发布产物页面内约定
 
 - 双模式开关：`#hs-toggle` 元素，两版内容分别在 `#hs-enhanced` 与 `#hs-faithful`，切换仅改 `hidden` 属性；无增强版时不渲染开关。
+- 长内容目录（D19）：增强正文放在 `.hs-enhanced-content`；公共包壳层提供 `#hs-toc`。浏览器测得增强正文 `scrollHeight > 2 * innerHeight` 且正文内至少有 2 个非 Hero 的 `h2/h3/h4` 时，补齐唯一锚点并显示目录；否则 `#hs-toc` 保持 `hidden`。目录链接使用页内 fragment，切回忠实版时随 `#hs-enhanced` 一同隐藏。
 - 页脚固定 `.hs-footer`（footerBadge=false 时整块不输出）；`<meta name="robots" content="noindex">` 恒在。

@@ -54,6 +54,17 @@ h1 { font-size: 28px; line-height: 1.2; margin: 0; letter-spacing: 0; }
 #hs-toggle button { border: 0; border-radius: calc(var(--hs-radius-control) - 2px); padding: 6px 10px; background: transparent; color: var(--hs-muted); cursor: pointer; font: inherit; transition: background 120ms ease-out, color 120ms ease-out; }
 #hs-toggle button[aria-pressed="true"] { background: var(--hs-accent); color: var(--hs-accent-ink); }
 .hs-panel { background: var(--hs-panel); border: 1px solid var(--hs-line); border-radius: var(--hs-radius-card); padding: 24px; box-shadow: var(--hs-shadow-card); }
+.hs-panel.hs-has-toc { display: grid; grid-template-columns: minmax(150px, 190px) minmax(0, 1fr); gap: 28px; align-items: start; }
+#hs-toc { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow-y: auto; padding: 2px 16px 2px 0; border-right: 1px solid var(--hs-line); }
+.hs-toc-title { margin: 0 0 10px; color: var(--hs-ink); font-size: 13px; font-weight: 700; letter-spacing: .08em; }
+#hs-toc ol { list-style: none; margin: 0; padding: 0; }
+#hs-toc li + li { margin-top: 3px; }
+#hs-toc a { display: block; padding: 5px 7px; border-radius: var(--hs-radius-control); color: var(--hs-muted); font-size: 13px; line-height: 1.4; text-decoration: none; overflow-wrap: anywhere; }
+#hs-toc a:hover { background: var(--hs-accent-soft); color: var(--hs-accent); }
+#hs-toc a:focus-visible { outline: 2px solid var(--hs-accent); outline-offset: 1px; }
+#hs-toc .hs-toc-depth-3 { padding-left: 17px; }
+#hs-toc .hs-toc-depth-4 { padding-left: 27px; }
+.hs-enhanced-content h2, .hs-enhanced-content h3, .hs-enhanced-content h4 { scroll-margin-top: 24px; }
 .hs-footer { margin-top: 22px; color: var(--hs-muted); font-size: 13px; }
 table { border-collapse: collapse; width: 100%; }
 th, td { border: 1px solid var(--hs-line); padding: 6px 8px; text-align: left; }
@@ -67,7 +78,11 @@ code { font-family: var(--hs-font-code); }
 .hljs-strong { font-weight: 700; }
 img { max-width: 100%; height: auto; }
 details > summary { cursor: pointer; }
-@media print { #hs-toggle { display: none; } details { display: block; } }
+@media (max-width: 720px) {
+  .hs-panel.hs-has-toc { display: block; }
+  #hs-toc { position: static; max-height: 40vh; margin: 0 0 22px; padding: 0 0 16px; border-right: 0; border-bottom: 1px solid var(--hs-line); }
+}
+@media print { #hs-toggle, #hs-toc { display: none !important; } .hs-panel.hs-has-toc { display: block; } details { display: block; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
 
 
@@ -126,7 +141,7 @@ details > summary { cursor: pointer; }
 <body data-hs-style="clinical">
 <main>
 <header class="hs-topbar"><h1>Q3 产品评审会议纪要</h1><div id="hs-toggle" role="group" aria-label="视图切换"><button type="button" data-view="faithful" aria-pressed="false">原文</button><button type="button" data-view="enhanced" aria-pressed="true">增强</button></div></header>
-<section id="hs-enhanced" class="hs-panel"><div class="hs-a2-col"><header class="hs-a2-hero"><p class="hs-a2-kicker">产品评审</p><h2 class="hs-a2-headline">Q3 产品评审会议纪要</h2><p class="hs-a2-herometa">2026-07-05 · 线上 · 小林 / Ada / 周宁 / 李想</p></header><div class="hs-a2-statgrid"><div class="hs-a2-stat"><span class="hs-a2-statval">8万</span><span class="hs-a2-statlabel">预算上限</span></div><div class="hs-a2-stat"><span class="hs-a2-statval">7/12</span><span class="hs-a2-statlabel">灰度截止</span></div><div class="hs-a2-stat"><span class="hs-a2-statval">2</span><span class="hs-a2-statlabel">覆盖团队</span></div></div><h3>决议</h3><ol class="hs-a2-list"><li>Q3 主推团队协作仪表盘，先覆盖销售和客服两个团队。</li><li>7 月 12 日前完成灰度名单，由 Ada 负责。</li><li>预算上限 8 万元，不新增外包。</li></ol><h3>行动项</h3><div class="hs-a2-tablewrap"><table><thead><tr><th>负责人</th><th>事项</th><th>截止</th></tr></thead><tbody><tr><td>Ada</td><td>整理灰度名单</td><td>2026-07-12</td></tr><tr><td>周宁</td><td>输出埋点清单</td><td>2026-07-10</td></tr><tr><td>李想</td><td>准备客户访谈问题</td><td>2026-07-09</td></tr><tr><td>小林</td><td>更新发布节奏表</td><td>2026-07-08</td></tr></tbody></table></div><h3>讨论记录</h3><ul class="hs-a2-timeline"><li class="hs-a2-tl-item"><span class="hs-a2-tl-title">指标口径</span><span class="hs-a2-tl-detail">销售看线索响应时长，客服看升级工单；第一版只做共用指标，不做复杂权限。</span></li><li class="hs-a2-tl-item"><span class="hs-a2-tl-title">埋点与灰度</span><span class="hs-a2-tl-detail">埋点缺口较大需先补事件上报；灰度团队不超过 20 人以控支持压力。</span></li><li class="hs-a2-tl-item"><span class="hs-a2-tl-title">客户访谈</span><span class="hs-a2-tl-detail">客户访谈放在灰度前一周完成，会议同意。</span></li></ul></div></section>
+<section id="hs-enhanced" class="hs-panel"><nav id="hs-toc" aria-labelledby="hs-toc-title" hidden><p id="hs-toc-title" class="hs-toc-title">目录</p><ol></ol></nav><div class="hs-enhanced-content"><div class="hs-a2-col"><header class="hs-a2-hero"><p class="hs-a2-kicker">产品评审</p><h2 class="hs-a2-headline">Q3 产品评审会议纪要</h2><p class="hs-a2-herometa">2026-07-05 · 线上 · 小林 / Ada / 周宁 / 李想</p></header><div class="hs-a2-statgrid"><div class="hs-a2-stat"><span class="hs-a2-statval">8万</span><span class="hs-a2-statlabel">预算上限</span></div><div class="hs-a2-stat"><span class="hs-a2-statval">7/12</span><span class="hs-a2-statlabel">灰度截止</span></div><div class="hs-a2-stat"><span class="hs-a2-statval">2</span><span class="hs-a2-statlabel">覆盖团队</span></div></div><h3>决议</h3><ol class="hs-a2-list"><li>Q3 主推团队协作仪表盘，先覆盖销售和客服两个团队。</li><li>7 月 12 日前完成灰度名单，由 Ada 负责。</li><li>预算上限 8 万元，不新增外包。</li></ol><h3>行动项</h3><div class="hs-a2-tablewrap"><table><thead><tr><th>负责人</th><th>事项</th><th>截止</th></tr></thead><tbody><tr><td>Ada</td><td>整理灰度名单</td><td>2026-07-12</td></tr><tr><td>周宁</td><td>输出埋点清单</td><td>2026-07-10</td></tr><tr><td>李想</td><td>准备客户访谈问题</td><td>2026-07-09</td></tr><tr><td>小林</td><td>更新发布节奏表</td><td>2026-07-08</td></tr></tbody></table></div><h3>讨论记录</h3><ul class="hs-a2-timeline"><li class="hs-a2-tl-item"><span class="hs-a2-tl-title">指标口径</span><span class="hs-a2-tl-detail">销售看线索响应时长，客服看升级工单；第一版只做共用指标，不做复杂权限。</span></li><li class="hs-a2-tl-item"><span class="hs-a2-tl-title">埋点与灰度</span><span class="hs-a2-tl-detail">埋点缺口较大需先补事件上报；灰度团队不超过 20 人以控支持压力。</span></li><li class="hs-a2-tl-item"><span class="hs-a2-tl-title">客户访谈</span><span class="hs-a2-tl-detail">客户访谈放在灰度前一周完成，会议同意。</span></li></ul></div></div></section>
 <section id="hs-faithful" class="hs-panel" hidden><h1 id="q3-%E4%BA%A7%E5%93%81%E8%AF%84%E5%AE%A1%E4%BC%9A%E8%AE%AE%E7%BA%AA%E8%A6%81">Q3 产品评审会议纪要</h1>
 <p>时间：2026-07-05 10:00
 地点：线上会议
@@ -174,11 +189,63 @@ details > summary { cursor: pointer; }
     for (const button of toggle.querySelectorAll("button")) {
       button.setAttribute("aria-pressed", String(button.dataset.view === view));
     }
+    document.dispatchEvent(new Event("hs:viewchange"));
   }
   toggle.addEventListener("click", (event) => {
     const button = event.target.closest("button[data-view]");
     if (button) show(button.dataset.view);
   });
+})();
+
+(() => {
+  const section = document.querySelector("#hs-enhanced");
+  const content = section?.querySelector(".hs-enhanced-content");
+  const toc = section?.querySelector("#hs-toc");
+  const list = toc?.querySelector("ol");
+  if (!section || !content || !toc || !list) return;
+
+  const headings = [...content.querySelectorAll("h2:not(.hs-a2-headline), h3, h4")]
+    .filter((heading) => heading.textContent.trim());
+  if (headings.length < 2) return;
+
+  const usedIds = new Set(
+    [...document.querySelectorAll("[id]")]
+      .filter((element) => !headings.includes(element))
+      .map((element) => element.id)
+  );
+  headings.forEach((heading, index) => {
+    let id = heading.id;
+    if (!id || usedIds.has(id)) {
+      const base = "hs-section-" + (index + 1);
+      id = base;
+      let suffix = 2;
+      while (usedIds.has(id)) id = base + "-" + suffix++;
+      heading.id = id;
+    }
+    usedIds.add(id);
+
+    const item = document.createElement("li");
+    item.className = "hs-toc-depth-" + heading.tagName.slice(1);
+    const link = document.createElement("a");
+    link.href = "#" + encodeURIComponent(id);
+    link.textContent = heading.textContent.trim();
+    item.append(link);
+    list.append(item);
+  });
+
+  let frame = 0;
+  function refresh() {
+    frame = 0;
+    const show = !section.hidden && content.scrollHeight > window.innerHeight * 2;
+    section.classList.toggle("hs-has-toc", show);
+    toc.hidden = !show;
+  }
+  function scheduleRefresh() {
+    if (!frame) frame = requestAnimationFrame(refresh);
+  }
+  scheduleRefresh();
+  addEventListener("resize", scheduleRefresh, { passive: true });
+  document.addEventListener("hs:viewchange", scheduleRefresh);
 })();
 </script>
 </body>
