@@ -40,6 +40,7 @@ test("composePage renders dual mode with toggle and exact faithful html", () => 
   assert.match(html, /<meta name="robots" content="noindex">/);
   assert.match(html, /id="hs-toggle"/);
   assert.match(html, /id="hs-enhanced"/);
+  assert.match(html, /<button id="hs-toc-trigger"[^>]*aria-controls="hs-toc"[^>]* hidden>/);
   assert.match(html, /<nav id="hs-toc"[^>]* hidden>/);
   assert.match(html, /class="hs-enhanced-content"/);
   assert.match(html, new RegExp(`<section id="hs-faithful" class="hs-panel" hidden>${faithful.html.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}<\\/section>`));
@@ -65,8 +66,15 @@ test("long enhanced content ships viewport-aware clickable TOC behavior", () => 
   assert.match(html, /content\.scrollHeight > window\.innerHeight \* 2/);
   assert.match(html, /h2:not\(\.hs-a2-headline\), h3, h4/);
   assert.match(html, /link\.href = "#" \+ encodeURIComponent\(id\)/);
-  assert.match(html, /section\.classList\.toggle\("hs-has-toc", show\)/);
+  assert.match(html, /trigger\.setAttribute\("aria-expanded", String\(open\)\)/);
+  assert.match(html, /link\.setAttribute\("aria-current", "location"\)/);
+  assert.match(html, /document\.body\.classList\.toggle\("hs-toc-open", open\)/);
+  assert.match(html, /event\.key === "Escape"/);
+  assert.match(html, /event\.key === "Tab"[^\n]+matchMedia\("\(max-width: 720px\)"\)\.matches/);
+  assert.match(html, /!backdrop\.contains\(event\.target\)/);
+  assert.match(html, /#hs-toc\[data-open="true"\]/);
   assert.match(html, /@media \(max-width: 720px\)/);
+  assert.match(html, /bottom: max\(14px, env\(safe-area-inset-bottom\)\)/);
 
   const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]);
   assert.equal(scripts.length, 1);
@@ -86,6 +94,7 @@ test("composePage without enhanced input renders faithful-only page without togg
   assert.equal(mode, "faithful");
   assert.doesNotMatch(html, /id="hs-toggle"/);
   assert.doesNotMatch(html, /id="hs-enhanced"/);
+  assert.doesNotMatch(html, /id="hs-toc-trigger"/);
   assert.doesNotMatch(html, /id="hs-toc"/);
   assert.match(html, /id="hs-faithful"/);
 });
