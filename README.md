@@ -123,7 +123,7 @@ The CLI exits with an `UNAUTHORIZED` upload error. Re-run `npx vercel login` (or
 Run `htmlshare list` — the `code` column shows the access code for every page you published from this machine.
 
 **My page is larger than the free per-page limit.**
-Local images are inlined as data URIs, which can grow a page. Trim or link large images, or publish to a target/plan with a higher per-page limit. Oversized images are left as links with a warning rather than silently inlined.
+Local images, audio, video, and download files are inlined as data URIs and therefore upload and delete with the page. Compress media or use a target/plan with a higher per-page limit. Missing, unreadable, unsafe image, or over-limit local resources fail before upload, so a known broken local link is never published.
 
 **The official cloud is unavailable.**
 Switch targets: `htmlshare publish ./note.md --target vercel` (or `cloudflare`, or your `selfhost`). Your configured targets are independent, so one being down doesn't block the others.

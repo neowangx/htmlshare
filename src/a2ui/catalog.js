@@ -78,10 +78,10 @@ function table(node, ctx) {
 
 function image(node, ctx) {
   const src = str(ctx.resolve(node.src)).trim();
-  // Only self-contained sources survive D12: data: URIs and remote https. Local/relative refs
-  // can't be inlined here (no base dir), so degrade to a note rather than ship a broken image.
-  if (!/^(?:https:|data:)/i.test(src)) {
-    ctx.warn(`IMAGE: A2UI Image src not self-contained, skipped: ${src || "(empty)"}`);
+  // Relative/file sources are resolved and embedded by the publish collector after A2UI render.
+  // Reject active schemes here; the collector never attempts to read them.
+  if (!src || /^(?:javascript:|vbscript:)/i.test(src)) {
+    ctx.warn(`IMAGE: A2UI Image src invalid, skipped: ${src || "(empty)"}`);
     return "";
   }
   const alt = escapeHtml(str(ctx.resolve(node.alt)));
@@ -196,15 +196,20 @@ function button(node, ctx) {
 }
 
 function media(node, ctx) {
-  // Audio/Video/Lottie can't play in a zero-JS single file without external/runtime deps;
-  // degrade to a labelled link when a source exists, else a note.
   const src = str(ctx.resolve(node.src)).trim();
   const label = escapeHtml(str(ctx.resolve(node.title)) || node.component);
-  if (/^https?:/i.test(src)) {
-    return `<p class="hs-a2-media"><a href="${escapeHtml(src)}">▶ ${label}</a></p>`;
+  if (!src || /^(?:javascript:|vbscript:)/i.test(src)) {
+    ctx.warn(`MEDIA: ${node.component} has no safe source`);
+    return "";
   }
-  ctx.warn(`MEDIA: ${node.component} degraded (no playable static form)`);
-  return "";
+  if (/^(?:Audio|AudioPlayer)$/i.test(node.component)) {
+    return `<figure class="hs-a2-media"><figcaption>${label}</figcaption><audio controls preload="metadata" src="${escapeHtml(src)}"></audio></figure>`;
+  }
+  if (/^(?:Video|VideoPlayer)$/i.test(node.component)) {
+    return `<figure class="hs-a2-media"><figcaption>${label}</figcaption><video controls playsinline preload="metadata" src="${escapeHtml(src)}"></video></figure>`;
+  }
+  // Lottie still needs a JS runtime, so preserve its local/remote payload as a usable file link.
+  return `<p class="hs-a2-media"><a href="${escapeHtml(src)}">▶ ${label}</a></p>`;
 }
 
 export const CATALOG = new Map([
@@ -261,5 +266,6 @@ ${TAB_CSS}
 .hs-a2-button { display: inline-flex; align-items: center; padding: 8px 14px; border-radius: var(--hs-radius-control); background: var(--hs-accent); color: var(--hs-accent-ink); text-decoration: none; font-size: 14px; }
 .hs-a2-button-static { background: var(--hs-panel-subtle); color: var(--hs-muted); border: 1px solid var(--hs-line); }
 .hs-a2-media a { color: var(--hs-accent); }
+.hs-a2-media audio, .hs-a2-media video { display: block; width: 100%; max-width: 100%; margin-top: 8px; }
 .hs-chart { display: block; width: 100%; height: auto; max-width: 640px; margin: 4px 0; }
 `;

@@ -4,7 +4,8 @@ import { homedir } from "node:os";
 import { basename, dirname, extname, isAbsolute, join, resolve } from "node:path";
 
 import { composePage } from "../compose.js";
-import { convertFile, inlineLocalImages } from "../convert.js";
+import { convertFile } from "../convert.js";
+import { MAX_LOCAL_ASSET_BYTES, assetDependenciesValid, embedLocalAssets } from "../assets.js";
 import { encryptHtml, generateStaticCode } from "../encrypt.js";
 import { describeExpiry, parseExpiry, wrapWithExpiry } from "../expiry.js";
 import { getAdapter } from "../adapters/index.js";
@@ -13,6 +14,7 @@ import { loginCloud } from "../adapters/cloud.js";
 import { resolveTarget } from "../adapters/resolve.js";
 import { findEntry, loadManifest, remove, upsert } from "../lib/manifest.js";
 import { loadConfig, saveConfig } from "../lib/config.js";
+import { AppError } from "../lib/errors.js";
 
 function gateOf(adapter, target) {
   return adapter?.gate || (target === "vercel" || target === "cloudflare" ? "static" : "server");
@@ -99,36 +101,22 @@ function resolveCode(flags, config, gate, existing) {
   return { code: autoCode(gate), explicit: false };
 }
 
-// D12: output is self-contained — images travel as data URIs. For direct-upload HTML we
-// inline local relative <img> the same way the Markdown path does (2MB cap, warn + keep as
-// link on missing/oversized/unsupported). HTML with no local images is returned byte-for-byte
-// unchanged, so the byte-exact guarantee still holds for already-self-contained pages.
-function localImageSrcs(html) {
-  const found = [];
-  for (const match of String(html).matchAll(/<img\b[^>]*?\bsrc\s*=\s*["']([^"']+)["']/gi)) {
-    const src = match[1];
-    if (!/^(?:https?:|data:|mailto:|\/\/|#)/i.test(src)) found.push(src);
-  }
-  return found;
-}
-
+// D20: collect every local resource into the one HTML publication unit. Already self-contained
+// direct HTML remains byte-exact; a known broken local reference aborts before upload.
 function htmlFromInput(absPath, flags, stderr, config) {
   if (extname(absPath).toLowerCase() === ".html") {
     stderr.write("COLLECT: html direct\n");
     const raw = readFileSync(absPath, "utf8");
-    const localImages = localImageSrcs(raw);
-    if (!localImages.length) {
-      return { html: raw, title: basename(absPath, ".html"), directHtml: true, warnings: [] };
+    const embedded = embedLocalAssets(raw, dirname(absPath), { strict: true });
+    if (embedded.assets.length) {
+      const bytes = embedded.assets.reduce((sum, item) => sum + item.size, 0);
+      stderr.write(`ASSET: embedded ${embedded.assets.length} local file(s), ${(bytes / 1024 / 1024).toFixed(2)}MB\n`);
     }
-    const warnings = [];
-    const html = inlineLocalImages(raw, dirname(absPath), warnings);
-    for (const warning of warnings) stderr.write(`${warning}\n`);
-    stderr.write(`IMAGE: inlined ${localImages.length - warnings.length}/${localImages.length} local image(s) as data URIs\n`);
-    return { html, title: basename(absPath, ".html"), directHtml: true, warnings };
+    return { html: embedded.html, title: basename(absPath, ".html"), directHtml: true, warnings: [], assets: embedded.assets };
   }
 
   stderr.write("CONVERT: markdown\n");
-  const faithful = convertFile(absPath);
+  const faithful = convertFile(absPath, { strictAssets: true });
   for (const warning of faithful.warnings || []) stderr.write(`${warning}\n`);
   // Pass the raw enhanced string straight to compose so a malformed file degrades to the
   // faithful version (V1) instead of throwing — D6 says publish must still succeed.
@@ -147,7 +135,20 @@ function htmlFromInput(absPath, flags, stderr, config) {
     stderr.write(`ENHANCED: degraded to faithful (${reason})\n`);
   }
   for (const warning of page.validation.warnings || []) stderr.write(`ENHANCED: ${warning}\n`);
-  return { html: page.html, title: flags.title || faithful.title, directHtml: false, warnings: faithful.warnings || [] };
+  // The faithful fragment has already been embedded before sanitizing. This second pass captures
+  // local sources introduced by the A2UI enhanced view and the composed page CSS.
+  const embedded = embedLocalAssets(page.html, dirname(absPath), { strict: true });
+  const assets = [...(faithful.assets || []), ...embedded.assets];
+  if (assets.length) {
+    const unique = new Map(assets.map((item) => [item.path, item]));
+    const bytes = [...unique.values()].reduce((sum, item) => sum + item.size, 0);
+    if (bytes > MAX_LOCAL_ASSET_BYTES) {
+      throw new AppError("INVALID_INPUT", `本地资源原始总量超过 ${MAX_LOCAL_ASSET_BYTES / 1024 / 1024}MB`);
+    }
+    stderr.write(`ASSET: embedded ${unique.size} local file(s), ${(bytes / 1024 / 1024).toFixed(2)}MB\n`);
+    return { html: embedded.html, title: flags.title || faithful.title, directHtml: false, warnings: faithful.warnings || [], assets: [...unique.values()] };
+  }
+  return { html: embedded.html, title: flags.title || faithful.title, directHtml: false, warnings: faithful.warnings || [], assets: [] };
 }
 
 function configFooter(config) {
@@ -310,16 +311,27 @@ async function publishCommand(file, flags, deps) {
 
   let html;
   let title;
-  if (!flags.force && existsSync(artifactPath) && existsSync(statePath)) {
+  const cachedState = existsSync(statePath) ? readState(statePath) : null;
+  if (!flags.force && existsSync(artifactPath) && cachedState?.assetBundleVersion === 1 && assetDependenciesValid(cachedState.assets)) {
     stderr.write("CACHE: hit CONVERT\n");
     html = readFileSync(artifactPath, "utf8");
-    title = flags.title || readState(statePath)?.title || basename(absPath, extname(absPath));
+    title = flags.title || cachedState.title || basename(absPath, extname(absPath));
   } else {
-    const rendered = htmlFromInput(absPath, flags, stderr, config);
+    if (cachedState?.assets?.length) stderr.write("CACHE: local asset changed, rebuilding\n");
+    let rendered;
+    try {
+      rendered = htmlFromInput(absPath, flags, stderr, config);
+    } catch (error) {
+      if (error instanceof AppError && error.code === "INVALID_INPUT") {
+        stderr.write(`INPUT: ${error.message}\n`);
+        return 2;
+      }
+      throw error;
+    }
     html = rendered.html;
     title = flags.title || rendered.title;
     writeFileSync(artifactPath, html);
-    writeFileSync(statePath, `${JSON.stringify({ source: absPath, target, title, at: new Date().toISOString() }, null, 2)}\n`);
+    writeFileSync(statePath, `${JSON.stringify({ source: absPath, target, title, assetBundleVersion: 1, assets: rendered.assets || [], at: new Date().toISOString() }, null, 2)}\n`);
   }
 
   const gate = gateOf(adapter, target);

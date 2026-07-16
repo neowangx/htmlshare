@@ -1,5 +1,5 @@
-import { existsSync, readFileSync } from "node:fs";
-import { basename, dirname, extname, resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { basename, dirname, extname } from "node:path";
 
 import MarkdownIt from "markdown-it";
 import anchor from "markdown-it-anchor";
@@ -7,6 +7,7 @@ import highlightjs from "markdown-it-highlightjs";
 import toc from "markdown-it-toc-done-right";
 
 import { sanitizeFaithful } from "./lib/sanitize.js";
+import { embedLocalAssets } from "./assets.js";
 
 function buildMarkdown() {
   return new MarkdownIt({ html: true, linkify: true, typographer: false })
@@ -67,66 +68,35 @@ export function escapeHtml(value) {
   return value.replace(/[&<>"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" })[char]);
 }
 
-// D12: output must be self-contained. Inline local images referenced by relative path as
-// data: URIs; leave remote/data URIs alone; warn (and keep as a link) when a file is missing
-// or exceeds the per-image cap so the page never silently ships a broken/huge asset.
-const MAX_INLINE_IMAGE_BYTES = 2 * 1024 * 1024;
-const IMAGE_MIME = {
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".gif": "image/gif",
-  ".webp": "image/webp"
-};
-
-// The `src` attribute may be single- or double-quoted: markdown-it emits double quotes, but
-// hand-authored HTML (direct-upload path) uses either — capture the quote char and reuse it.
+// Compatibility export for integrations that used the old image-only helper. D20 now embeds
+// every supported local resource; non-strict mode retains the old warning-and-continue behavior.
 export function inlineLocalImages(html, baseDir, warnings) {
-  if (!baseDir) return html;
-  return html.replace(/<img\b[^>]*?\bsrc=(["'])([^"']*)\1[^>]*>/gi, (tag, quote, src) => {
-    if (!src || /^(?:https?:|data:|mailto:|\/\/)/i.test(src)) return tag;
-    let relative;
-    try {
-      relative = decodeURI(src.split(/[?#]/)[0]);
-    } catch {
-      return tag;
-    }
-    const abs = resolve(baseDir, relative);
-    const ext = extname(abs).toLowerCase();
-    const mime = IMAGE_MIME[ext];
-    if (!mime) {
-      warnings.push(`IMAGE: unsupported type left as link: ${src}`);
-      return tag;
-    }
-    if (!existsSync(abs)) {
-      warnings.push(`IMAGE: file not found, left as link: ${src}`);
-      return tag;
-    }
-    const bytes = readFileSync(abs);
-    if (bytes.length > MAX_INLINE_IMAGE_BYTES) {
-      warnings.push(`IMAGE: ${(bytes.length / 1024 / 1024).toFixed(1)}MB exceeds ${MAX_INLINE_IMAGE_BYTES / 1024 / 1024}MB, left as link: ${src}`);
-      return tag;
-    }
-    const dataUri = `data:${mime};base64,${bytes.toString("base64")}`;
-    return tag.replace(`src=${quote}${src}${quote}`, `src=${quote}${dataUri}${quote}`);
-  });
+  const result = embedLocalAssets(html, baseDir);
+  warnings?.push(...result.warnings);
+  return result.html;
 }
 
-export function convertFaithful(md, fallbackTitle = "Untitled", { baseDir = null } = {}) {
+export function convertFaithful(md, fallbackTitle = "Untitled", { baseDir = null, strictAssets = false } = {}) {
   const source = String(md ?? "");
   const headings = extractHeadings(source);
   const warnings = [];
-  const html = inlineLocalImages(sanitizeFaithful(buildMarkdown().render(source)), baseDir, warnings);
+  // Embed before sanitizing: file:// is intentionally not an allowed output scheme, while the
+  // resulting data URI is. This also lets raw Markdown HTML audio/video survive as self-contained
+  // media without ever exposing a local path.
+  const embedded = embedLocalAssets(buildMarkdown().render(source), baseDir, { strict: strictAssets });
+  warnings.push(...embedded.warnings);
+  const html = sanitizeFaithful(embedded.html);
 
   return {
     html,
     title: headings.find((item) => item.level === 1)?.text || fallbackTitle,
     headings,
-    warnings
+    warnings,
+    assets: embedded.assets
   };
 }
 
-export function convertFile(mdPath) {
+export function convertFile(mdPath, options = {}) {
   const md = readFileSync(mdPath, "utf8");
-  return convertFaithful(md, basename(mdPath, extname(mdPath)), { baseDir: dirname(mdPath) });
+  return convertFaithful(md, basename(mdPath, extname(mdPath)), { baseDir: dirname(mdPath), ...options });
 }

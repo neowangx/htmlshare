@@ -74,12 +74,12 @@ test("Tabs render CSS-only with the first tab pre-checked", () => {
   assert.doesNotMatch(result.html, /<script/);
 });
 
-test("Image only accepts self-contained sources", () => {
+test("Image preserves remote and local sources for the publication collector", () => {
   const remote = renderA2UI(doc([{ id: "c0", component: "Image", src: "https://x/y.png", alt: "ok" }]));
   assert.match(remote.html, /<img/);
   const local = renderA2UI(doc([{ id: "c0", component: "Column", children: ["t", "i"] }, { id: "t", component: "Text", text: "x" }, { id: "i", component: "Image", src: "./local.png" }]));
-  assert.match(local.warnings.join("|"), /IMAGE/);
-  assert.doesNotMatch(local.html, /local\.png/);
+  assert.equal(local.warnings.length, 0);
+  assert.match(local.html, /src="\.\/local\.png"/);
 });
 
 test("Button degrades to a static chip without a URL", () => {

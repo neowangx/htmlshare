@@ -26,6 +26,10 @@ const ALLOWED_TAGS = [
   "hr",
   "br",
   "img",
+  "audio",
+  "video",
+  "source",
+  "track",
   "div",
   "span",
   "section",
@@ -59,17 +63,26 @@ const BASE_OPTIONS = {
   // survive — without them every [[toc]] / heading link is a dead fragment. id carries no
   // script vector; only these structural tags get it.
   allowedAttributes: {
-    a: ["href"],
-    img: ["src", "alt"],
+    a: ["href", "download"],
+    img: ["src", "alt", "loading"],
+    audio: ["src", "controls", "autoplay", "loop", "muted", "preload"],
+    video: ["src", "poster", "controls", "autoplay", "loop", "muted", "preload", "playsinline", "width", "height"],
+    source: ["src", "type", "media"],
+    track: ["src", "kind", "srclang", "label", "default"],
     h1: ["id"], h2: ["id"], h3: ["id"], h4: ["id"], h5: ["id"], h6: ["id"],
     nav: ["id"],
     "*": ["class"]
   },
   allowedSchemes: [],
-  allowedSchemesByTag: { a: ["http", "https", "mailto"], img: ["data"] },
+  allowedSchemesByTag: {
+    a: ["http", "https", "mailto", "data"],
+    img: ["data"], audio: ["data"], video: ["data"], source: ["data"], track: ["data"]
+  },
   allowProtocolRelative: false,
   nonTextTags: ["script", "style", "textarea", "noscript"],
   disallowedTagsMode: "discard",
+  // SVG stays blocked in sanitized prose: an SVG document can carry active/external content.
+  // A local SVG used as an image is rejected by the strict collector with a clear input error.
   exclusiveFilter(frame) {
     return frame.tag === "img" && /^data:image\/svg/i.test(frame.attribs.src || "");
   }

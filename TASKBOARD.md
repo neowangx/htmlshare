@@ -38,6 +38,7 @@
 | C-15 | M3 | 高级设置 config | C-07 | done | 实现 `config show/target/selfhost/defaults`，show 脱敏 token 后 4 位；publish 读取 defaults 与 footerBadge；覆盖设置写入、脱敏、默认模板/风格/访问码生效；`npm test` 通过（106 tests）。 |
 | C-16 | M3 | 长增强内容自动目录导航 | C-04, U-03 | done | 完成超过两屏且至少有 2 个章节标题时自动显示目录的初版；长/短内容、跳转与响应式通过（交互形态后由 C-17 替代），`npm test` 187/187 通过。 |
 | C-17 | M3 | 长文目录跨端易用性重设计 | C-16 | done | 桌面改为右侧固定入口＋浮层抽屉，手机改为拇指区悬浮入口＋底部面板；增加当前章节高亮/进度、目录项自动收起、遮罩/ESC/焦点循环；Playwright 跨端验收通过，`npm test` 187/187 通过。 |
+| C-18 | M3 | 本地资源原子打包与生命周期 | C-07, C-17 | done | 按 D20 将图片/音视频/字幕/下载链接/CSS 资源嵌入单 HTML，覆盖 Markdown、直传 HTML 与 A2UI；缺失/不安全/超限资源在上传前阻断，依赖变化自动使缓存失效，更新/过期/撤回沿用整页删除；`npm test` 195/195 通过。 |
 | K-05 | M3 | SKILL.md 完整增强规则 | K-01, C-10~C-14 | done | 将 docs/05 §2~§4/§6 完整落入主 `SKILL.md`，并重生成 Codex/OpenClaw/Hermes 封装；新增 docs/05 样例 A/B/C 固定资产与 template 判定断言、docs/04 §8 枚举 diff 断言；`npm test` 通过（145 tests）；人工项待验：H18 版式质量走查。 |
 | G-02 | M4 | GitHub 仓库与 CI（CI 可 M1 后早启） | C-01; Q4 | done | 已创建 GitHub 私有仓库 `neowangx/htmlshare`，默认分支 `main`；推送当前仓库并加入 Actions CI（Node 20/22），`gh run watch 28874002338` 确认 main CI 成功；远端检查确认 `../htmlshare-cloud` 未配置 remote、未随公开仓泄漏；分支保护因 GitHub 私有仓需 Pro/公开仓返回 403，见 H19。 |
 | G-01 | M4 | README 与文档 | K-05 | done | 新增中英双语 README、server/README、自证概览图 `examples/screenshots/overview.svg`；README 明确官方云服务端不开源、默认 100MB 免费空间、访问码非强安全；新增 README doctest/死链/声明断言；`npm test` 通过（148 tests）。 |

@@ -329,7 +329,7 @@ test("HTML direct upload inlines local images that exist as data URIs", async ()
   const uploaded = adapter.calls[0].html;
   assert.match(uploaded, /src="data:image\/png;base64,/); // local image inlined
   assert.match(uploaded, /src="https:\/\/x\/y\.png"/); // remote image untouched
-  assert.match(h.err(), /IMAGE: inlined 1\/1 local image/);
+  assert.match(h.err(), /ASSET: embedded 1 local file/);
 });
 
 test("HTML direct upload with no local images ships bytes unchanged (D12)", async () => {
@@ -348,21 +348,57 @@ test("HTML direct upload with no local images ships bytes unchanged (D12)", asyn
   assert.doesNotMatch(h.err(), /IMAGE:/);
 });
 
-test("HTML direct upload warns and keeps link when local image is missing", async () => {
+test("HTML direct upload rejects a missing local resource before upload", async () => {
   const h = harness();
   const adapter = mockAdapter();
   const file = join(h.root, "page.html");
   const raw = "<!doctype html><h1>Hi</h1><img src=\"./missing.png\">";
   writeFileSync(file, raw);
 
-  await run(["publish", file, "--target", "mock", "--public"], {
+  const code = await run(["publish", file, "--target", "mock", "--public"], {
     configDir: h.configDir, cacheDir: h.cacheDir, config: { defaultTarget: "mock" },
     adapters: { mock: adapter }, stdout: h.stdout, stderr: h.stderr
   });
 
-  assert.equal(adapter.calls[0].html, raw); // nothing to inline, left as link
-  assert.match(h.err(), /IMAGE: file not found, left as link/);
-  assert.match(h.err(), /IMAGE: inlined 0\/1 local image/);
+  assert.equal(code, 2);
+  assert.equal(adapter.calls.length, 0);
+  assert.match(h.err(), /INPUT: 本地资源不存在/);
+});
+
+test("Markdown publishes local audio, video and file links as self-contained data URIs", async () => {
+  const h = harness();
+  const adapter = mockAdapter();
+  writeFileSync(join(h.root, "sound.mp3"), "audio");
+  writeFileSync(join(h.root, "movie.mp4"), "video");
+  writeFileSync(join(h.root, "notes.pdf"), "pdf");
+  const file = join(h.root, "page.md");
+  writeFileSync(file, `# Media\n\n<audio controls src="./sound.mp3"></audio>\n<video controls src="./movie.mp4"></video>\n[附件](./notes.pdf)`);
+
+  const code = await run(["publish", file, "--target", "mock", "--public"], publishDeps(h, adapter));
+  assert.equal(code, 0);
+  assert.match(adapter.calls[0].html, /<audio[^>]+src="data:audio\/mpeg;base64,/);
+  assert.match(adapter.calls[0].html, /<video[^>]+src="data:video\/mp4;base64,/);
+  assert.match(adapter.calls[0].html, /href="data:application\/pdf;base64,/);
+});
+
+test("A2UI local media is embedded and local asset changes invalidate the cache", async () => {
+  const h = harness();
+  const adapter = mockAdapter();
+  const file = join(h.root, "page.md");
+  const enhanced = join(h.root, "a2ui.json");
+  const image = join(h.root, "photo.png");
+  writeFileSync(file, "# Media");
+  writeFileSync(image, "first");
+  writeFileSync(enhanced, JSON.stringify({ protocol: "a2ui/0.9-static", root: "i", components: [{ id: "i", component: "Image", src: "./photo.png" }] }));
+
+  await run(["publish", file, "--target", "mock", "--public", "--enhanced", enhanced], publishDeps(h, adapter));
+  const first = adapter.calls[0].html;
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  writeFileSync(image, "second-longer");
+  await run(["publish", file, "--target", "mock", "--public", "--enhanced", enhanced], publishDeps(h, adapter));
+  assert.notEqual(adapter.calls[1].html, first);
+  assert.match(h.err(), /CACHE: local asset changed, rebuilding/);
+  assert.doesNotMatch(adapter.calls[1].html, /\.\/photo\.png/);
 });
 
 test("C7 --public and --code together is rejected", async () => {

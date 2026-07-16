@@ -100,7 +100,7 @@ htmlshare config [target|selfhost|show]
 ```
 
 - **不变量**：模型只给类型化组件 + 结构化属性；HTML 全部由渲染器产出。唯一自由文本入口是 `RichText`/`Callout` 的 html 字段，强制走 sanitize 白名单。
-- **降级（D6）**：JSON 非法 / `root` 缺失 / `components` 为空 → 回退忠实版；未知组件 / 悬空 ID 引用 → 跳过并告警；`Chart` 数据不可用 → 降级为表格；音视频/Lottie → 降级为链接或静态图。发布永不因增强失败而中断。
+- **降级（D6）**：JSON 非法 / `root` 缺失 / `components` 为空 → 回退忠实版；未知组件 / 悬空 ID 引用 → 跳过并告警；`Chart` 数据不可用 → 降级为表格；远程音视频/Lottie → 降级为链接，本地音视频由 D20 收集器嵌入后使用原生播放器。增强结构错误不阻断发布；已识别的本地资源缺失属于输入错误，必须阻断上传。
 
 ## 5. 适配器接口（src/adapters/*，D3）
 
@@ -109,13 +109,14 @@ htmlshare config [target|selfhost|show]
 export const name = 'vercel';
 export async function detect()  // → { available: bool, reason?: string }（不抛异常）
 export async function publish({ html, id, meta })
-        // html: 最终单文件字符串（静态目标已含加密壳）
+        // html: 最终单文件字符串（本地资源已转 data URI；静态目标已含加密壳）
         // id: manifest 复用的 id 或 null（由适配器生成并返回）
         // meta: { title, encrypted: bool, code: string|null }
         // → { id, url }   失败抛 AdapterError(code, message)，code 用 §1 错误码
 export async function unpublish({ id })   // → void，幂等
 ```
 服务端类适配器把 `code` 传给服务端存储；静态类适配器忽略 `meta.code`（码已封装进加密壳）。
+适配器不接收独立附件：页面与其本地资源只有一个 HTML 发布/删除单元，保证更新、撤回和过期清理不会遗留孤儿文件。
 
 ## 6. 服务端 HTTP API（selfhost 与 cloud 同构，D9）
 
@@ -178,10 +179,10 @@ usage_events (id PK, owner_id, kind TEXT/*publish|view*/, page_id, at)
 - **主题** `clinical|minimal|editorial|darktech`（另有 auto，表示交给 CLI 或 A2UI theme 决定）
 - **组件** `Text|RichText|Column|Row|Grid|Card|Divider|List|Table|Image|Hero|StatGrid|Callout|Quote|Timeline|Tabs|Chart|Button`
 - **容器**（用 `children: [id...]` 引用子组件）：`Column`（纵排）、`Row`（横排）、`Grid`（自适应网格）、`Card`（面板）、`Tabs`（CSS-only 标签页，`tabs:[{label,children}]`）。
-- **内容**：`Text{text,variant:h1|h2|h3|body|caption}`、`RichText{html}`、`List{items[],ordered?}`、`Table{headers[],rows[][]}`、`Divider`、`Image{src,alt}`（仅 https/data 源）。
+- **内容**：`Text{text,variant:h1|h2|h3|body|caption}`、`RichText{html}`、`List{items[],ordered?}`、`Table{headers[],rows[][]}`、`Divider`、`Image{src,alt}`（https/data 或相对源文件的本地路径；本地源按 D20 嵌入）。
 - **强调块**：`Hero{kicker?,headline,meta?}`、`StatGrid{items:[{value,label}]}`、`Callout{tone:info|warning|success|danger,html}`、`Quote{text,cite?}`、`Timeline{items:[{title,detail?,time?}]}`。
 - **数据可视化**：`Chart{kind:line|bar|pie,series:[{label,value}]}` → 发布时内联 SVG。
-- **降级**：`Button{text,href?}`（无 URL 则降级为静态标签）；`Audio/Video/Lottie` 降级为链接。
+- **媒体/降级**：`Button{text,href?}`（无 URL 则降级为静态标签）；`Audio/AudioPlayer/Video/VideoPlayer{src,title?}` 的本地源嵌入并渲染原生播放器，远程源和 `Lottie` 降级为链接。
 - 公共区：`title`、双模式（增强/原文）开关、页脚由包壳层统一提供。
 
 ## 9. 静态加密包格式（encrypt.js ↔ 壳内解密 JS）

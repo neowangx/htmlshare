@@ -99,7 +99,7 @@ Content rules:
 - Use `Table` only when the source has real two-dimensional data. Do not force prose into a table.
 - Use `Chart` only when the source has real numeric series; otherwise use `StatGrid` or `List`.
 - Use card groups (`Grid` of `Card`) only when there are at least 3 similar items.
-- Images must be `https:` or `data:` sources (self-contained); local/relative image refs are skipped.
+- Local image, audio, video, poster, subtitle, download-link, and CSS `url(...)` references may be relative to the source Markdown/HTML file. The publisher embeds them into the final HTML, so they upload and expire/delete with the page. Keep remote URLs unchanged; do not manually replace local files with temporary web links.
 
 ## Failure Fallbacks
 
@@ -112,6 +112,8 @@ If enhancement takes more than 60 seconds, stop enhancing and publish without `-
 If the user requested a style that appears mismatched, obey the user and do not second-guess the choice.
 
 If upload fails, report the failure and mention that the rendered artifact is cached for retry.
+
+If a referenced local file is missing, unreadable, unsafe as an image (for example active SVG), or the local-resource total exceeds the collector limit, publishing stops before upload. Fix/remove the broken reference and retry; never claim a page was shared while keeping a known broken local link.
 
 If no target is configured, follow the CLI guidance. If the user has a VPS or server, help them configure `selfhost` first with `htmlshare config selfhost --base-url <url> --token <token>`. If they do not have a VPS or want to skip host setup, help them use Cloudflare Pages (`npx wrangler login`) or another available static target.
 
