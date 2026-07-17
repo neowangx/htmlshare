@@ -10,7 +10,7 @@ import { encryptHtml, generateStaticCode } from "../encrypt.js";
 import { describeExpiry, parseExpiry, wrapWithExpiry } from "../expiry.js";
 import { getAdapter } from "../adapters/index.js";
 import { AdapterError } from "../adapters/errors.js";
-import { loginCloud } from "../adapters/cloud.js";
+import { loginCloud, redeemInvite } from "../adapters/cloud.js";
 import { resolveTarget } from "../adapters/resolve.js";
 import { findEntry, loadManifest, remove, upsert } from "../lib/manifest.js";
 import { loadConfig, saveConfig } from "../lib/config.js";
@@ -433,7 +433,7 @@ export async function run(argv = process.argv.slice(2), deps = {}) {
   const stderr = deps.stderr || process.stderr;
   const parsed = parseArgs(argv);
   if (parsed.command === "--help" || parsed.command === "-h" || !parsed.command) {
-    stdout.write("htmlshare\n\nUsage:\n  htmlshare publish <file> [--target T] [--code C | --public] [--expires 7d | --no-expires] [--enhanced a2ui.json] [--style S] [--title T] [--force]\n  htmlshare login [--base-url URL]\n  htmlshare list [--json]\n  htmlshare unpublish <file|id> [--yes]\n  htmlshare expire <file|id> <7d|24h|2026-08-01|--off>\n  htmlshare sweep [--yes]\n  htmlshare config [show|target|selfhost|defaults]\n\nFlags:\n  --target selfhost|cloud|vercel|cloudflare  发布目标（缺省自动探测）\n  --code C | --public                        自定义访问码 / 关闭门禁\n  --expires 7d | --no-expires                过期时间（缺省会询问；到期后不可访问）\n  --enhanced a2ui.json                       A2UI 组件树增强内容（缺省仅忠实版）\n  --style auto|clinical|minimal|editorial|darktech  主题（也可由 A2UI 文档内 theme 指定）\n  --title T                                  覆盖标题\n  --force                                    跳过转换缓存，强制重渲染\n");
+    stdout.write("htmlshare\n\nUsage:\n  htmlshare publish <file> [--target T] [--code C | --public] [--expires 7d | --no-expires] [--enhanced a2ui.json] [--style S] [--title T] [--force]\n  htmlshare login <邀请码> | login [--base-url URL]\n  htmlshare list [--json]\n  htmlshare unpublish <file|id> [--yes]\n  htmlshare expire <file|id> <7d|24h|2026-08-01|--off>\n  htmlshare sweep [--yes]\n  htmlshare config [show|target|selfhost|defaults]\n\nFlags:\n  --target selfhost|cloud|vercel|cloudflare  发布目标（缺省自动探测）\n  --code C | --public                        自定义访问码 / 关闭门禁\n  --expires 7d | --no-expires                过期时间（缺省会询问；到期后不可访问）\n  --enhanced a2ui.json                       A2UI 组件树增强内容（缺省仅忠实版）\n  --style auto|clinical|minimal|editorial|darktech  主题（也可由 A2UI 文档内 theme 指定）\n  --title T                                  覆盖标题\n  --force                                    跳过转换缓存，强制重渲染\n");
     return 0;
   }
   if (parsed.command === "--version" || parsed.command === "-v") {
@@ -458,15 +458,26 @@ export async function run(argv = process.argv.slice(2), deps = {}) {
   }
 
   if (parsed.command === "login") {
+    const invite = parsed.flags.invite || parsed.file;
     try {
-      await loginCloud({
-        baseUrl: parsed.flags["base-url"] || parsed.flags.baseUrl,
-        configDir: deps.configDir,
-        stdout,
-        stderr,
-        fetchFn: deps.fetchFn,
-        intervalMs: deps.loginIntervalMs
-      });
+      if (invite) {
+        await redeemInvite({
+          invite,
+          baseUrl: parsed.flags["base-url"] || parsed.flags.baseUrl,
+          configDir: deps.configDir,
+          stdout,
+          fetchFn: deps.fetchFn
+        });
+      } else {
+        await loginCloud({
+          baseUrl: parsed.flags["base-url"] || parsed.flags.baseUrl,
+          configDir: deps.configDir,
+          stdout,
+          stderr,
+          fetchFn: deps.fetchFn,
+          intervalMs: deps.loginIntervalMs
+        });
+      }
       return 0;
     } catch (error) {
       if (error instanceof AdapterError) {

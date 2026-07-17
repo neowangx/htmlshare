@@ -213,3 +213,43 @@ test("P-05 cloud adapter remains weakly coupled to CLI and registry", () => {
   }
   assert.deepEqual(offenders, []);
 });
+
+function inviteBlob(baseUrl, code) {
+  return "hsi_" + Buffer.from(JSON.stringify({ u: baseUrl, c: code })).toString("base64url");
+}
+
+test("redeemInvite: a blob carries the server URL, saves token + defaultTarget=cloud", async () => {
+  await withServer(async (request, response) => {
+    assert.equal(request.method, "POST");
+    assert.equal(request.url, "/api/auth/redeem");
+    const body = await readJson(request);
+    assert.equal(body.invite, "CODE123");
+    response.writeHead(200, { "content-type": "application/json" });
+    response.end(JSON.stringify({ token: "granted-token" }));
+  }, async (baseUrl) => {
+    const h = harness();
+    const result = await cloud.redeemInvite({ invite: inviteBlob(baseUrl, "CODE123"), configDir: h.configDir, stdout: h.stdout });
+    assert.equal(result.token, "granted-token");
+    const saved = loadConfig(h.configDir);
+    assert.equal(saved.defaultTarget, "cloud");
+    assert.equal(saved.cloud.baseUrl, baseUrl);
+    assert.equal(saved.cloud.token, "granted-token");
+  });
+});
+
+test("redeemInvite: a bare code needs --base-url, and a used invite surfaces INVITE_USED", async () => {
+  await withServer((request, response) => {
+    response.writeHead(409, { "content-type": "application/json" });
+    response.end(JSON.stringify({ error: "INVITE_USED", message: "邀请码已被使用" }));
+  }, async (baseUrl) => {
+    const h = harness();
+    await assert.rejects(
+      () => cloud.redeemInvite({ invite: "RAWCODE", configDir: h.configDir, stdout: h.stdout }),
+      (error) => error instanceof AdapterError && error.code === "INVALID_INPUT"
+    );
+    await assert.rejects(
+      () => cloud.redeemInvite({ invite: "RAWCODE", baseUrl, configDir: h.configDir, stdout: h.stdout }),
+      (error) => error instanceof AdapterError && error.code === "INVITE_USED"
+    );
+  });
+});

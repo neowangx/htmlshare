@@ -10,11 +10,30 @@ const ERROR_BY_STATUS = {
   402: "PLAN_REQUIRED",
   403: "QUOTA_EXCEEDED",
   404: "NOT_FOUND",
+  409: "INVITE_USED",
   410: "EXPIRED",
   428: "AUTH_PENDING",
   429: "RATE_LIMITED",
   500: "INTERNAL"
 };
+
+const INVITE_PREFIX = "hsi_";
+
+// An invite blob (hsi_…) carries both the server URL and the code, so a friend runs a single
+// `htmlshare login <blob>` with no --base-url. A bare string is treated as a raw code that
+// needs --base-url. Kept in step with the server encoder (auth.js encodeInviteBlob).
+function decodeInvite(input) {
+  const trimmed = String(input || "").trim();
+  if (trimmed.startsWith(INVITE_PREFIX)) {
+    try {
+      const { u, c } = JSON.parse(Buffer.from(trimmed.slice(INVITE_PREFIX.length), "base64url").toString("utf8"));
+      return { baseUrl: u || null, code: c || "" };
+    } catch {
+      return { baseUrl: null, code: "" };
+    }
+  }
+  return { baseUrl: null, code: trimmed };
+}
 
 function normalizeBaseUrl(baseUrl) {
   return String(baseUrl || "").replace(/\/+$/, "");
@@ -152,4 +171,35 @@ export async function loginCloud({ baseUrl, configDir, stdout, stderr, fetchFn =
     const errorBody = await parseError(tokenResponse);
     throw new AdapterError(errorBody?.error || ERROR_BY_STATUS[tokenResponse.status] || "INTERNAL", errorBody?.message || "cloud login failed", { status: tokenResponse.status });
   }
+}
+
+// Redeem an invite blob/code for a cloud token and persist it — the whole `htmlshare login
+// <blob>` flow: one request, no browser, no email. Saves defaultTarget=cloud so the next
+// publish just works.
+export async function redeemInvite({ invite, baseUrl, configDir, stdout, fetchFn = fetch } = {}) {
+  const config = loadConfig(configDir);
+  const decoded = decodeInvite(invite);
+  const targetBaseUrl = normalizeBaseUrl(baseUrl || decoded.baseUrl || config.cloud?.baseUrl || "");
+  if (!targetBaseUrl) throw new AdapterError("INVALID_INPUT", "邀请码里没有服务器地址，请用 --base-url 指定");
+  if (!decoded.code) throw new AdapterError("INVALID_INPUT", "邀请码为空或格式不正确");
+
+  let response;
+  try {
+    response = await fetchFn(`${targetBaseUrl}/api/auth/redeem`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ invite: decoded.code })
+    });
+  } catch (error) {
+    throw new AdapterError("NETWORK", `无法连接云服务 ${targetBaseUrl}：${error.message}`, { cause: error });
+  }
+
+  if (response.status === 200) {
+    const body = await response.json();
+    saveConfig({ ...config, defaultTarget: "cloud", cloud: { ...(config.cloud || {}), baseUrl: targetBaseUrl, token: body.token } }, configDir);
+    stdout?.write("LOGIN: cloud ready\n");
+    return { baseUrl: targetBaseUrl, token: body.token };
+  }
+  const errorBody = await parseError(response);
+  throw new AdapterError(errorBody?.error || ERROR_BY_STATUS[response.status] || "INTERNAL", errorBody?.message || "邀请码兑换失败", { status: response.status });
 }
