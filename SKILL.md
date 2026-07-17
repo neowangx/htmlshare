@@ -13,6 +13,18 @@ Use this skill when the user wants to publish, share, or update a Markdown/HTML 
 
 Do not use it for strong secrets, private credentials, legal evidence, or anything that should never leave the machine.
 
+## Cloud Invite (a shared instance someone runs for you)
+
+If the user hands you a string that starts with `hsi_` (or says something like "用这个码/邀请码" alongside such a string), that is a **one-time invite to a managed cloud instance** that another person hosts and shares with them. Enroll once:
+
+```bash
+htmlshare login <hsi_...>
+```
+
+That single command redeems the code, saves a per-user token, and sets this cloud as the default publish target — the blob already contains the server address, so you do not need `--base-url` or any other config. After it prints `LOGIN: cloud ready`, publish normally; shares go to that shared cloud and are capped by the quota the host set (typically 100MB per person). Tell the user this is a shared service provided by whoever gave them the code, so the usual "access code is lightweight protection, not strong secrecy" caveat still applies, and their content lives on that host's server.
+
+If a friend loses their machine, the host reissues a fresh `hsi_` code; running `htmlshare login <new-blob>` again restores access to the same space.
+
 ## Publish Flow
 
 1. Identify the source file. If the user has not named one, ask for the file path.
@@ -119,7 +131,7 @@ If upload fails, report the failure and mention that the rendered artifact is ca
 
 If a referenced local file is missing, unreadable, unsafe as an image (for example active SVG), or the local-resource total exceeds the collector limit, publishing stops before upload. Fix/remove the broken reference and retry; never claim a page was shared while keeping a known broken local link.
 
-If no target is configured, follow the CLI guidance. If the user has a VPS or server, help them configure `selfhost` first with `htmlshare config selfhost --base-url <url> --token <token>`. If they do not have a VPS or want to skip host setup, help them use Cloudflare Pages (`npx wrangler login`) or another available static target.
+If no target is configured, first check whether someone has given the user an `hsi_` invite code — if so, that is the intended target: enroll with `htmlshare login <hsi_...>` (see **Cloud Invite** above) and publish there. Otherwise follow the CLI guidance: if the user has a VPS or server, help them configure `selfhost` first with `htmlshare config selfhost --base-url <url> --token <token>`; if they do not have a VPS or want to skip host setup, help them use Cloudflare Pages (`npx wrangler login`) or another available static target.
 
 ## Expiry and Lifecycle
 
