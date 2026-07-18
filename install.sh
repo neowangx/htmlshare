@@ -78,6 +78,7 @@ install_cli() {
   if [ -d "$INSTALL_DIR/node_modules" ] && [ -n "$(ls -A "$INSTALL_DIR/node_modules" 2>/dev/null)" ]; then
     log "Using bundled dependencies (skipping npm install)."
   else
+    require npm
     log "Installing npm dependencies..."
     npm --prefix "$INSTALL_DIR" install --omit=dev
   fi
@@ -143,7 +144,6 @@ install_hermes_placeholder() {
 }
 
 require node
-require npm
 if [ -z "$SOURCE_DIR" ]; then
   require git
 fi
