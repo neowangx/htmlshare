@@ -51,6 +51,11 @@ clone_or_update() {
     mkdir -p "$INSTALL_DIR"
     cp -R "$SOURCE_DIR/package.json" "$SOURCE_DIR/package-lock.json" "$SOURCE_DIR/SKILL.md" "$INSTALL_DIR/"
     cp -R "$SOURCE_DIR/bin" "$SOURCE_DIR/src" "$SOURCE_DIR/agents" "$SOURCE_DIR/scripts" "$INSTALL_DIR/"
+    # Carry bundled dependencies through when the source ships them, so an offline/self-hosted
+    # install needs neither GitHub nor the npm registry (install_cli then skips npm install).
+    if [ -d "$SOURCE_DIR/node_modules" ]; then
+      cp -R "$SOURCE_DIR/node_modules" "$INSTALL_DIR/"
+    fi
     return 0
   fi
 
@@ -70,8 +75,12 @@ clone_or_update() {
 }
 
 install_cli() {
-  log "Installing npm dependencies..."
-  npm --prefix "$INSTALL_DIR" install --omit=dev
+  if [ -d "$INSTALL_DIR/node_modules" ] && [ -n "$(ls -A "$INSTALL_DIR/node_modules" 2>/dev/null)" ]; then
+    log "Using bundled dependencies (skipping npm install)."
+  else
+    log "Installing npm dependencies..."
+    npm --prefix "$INSTALL_DIR" install --omit=dev
+  fi
   mkdir -p "$BIN_DIR"
   safe_symlink "$INSTALL_DIR/bin/htmlshare.js" "$BIN_DIR/htmlshare"
   chmod +x "$INSTALL_DIR/bin/htmlshare.js"
