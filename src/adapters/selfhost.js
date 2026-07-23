@@ -113,3 +113,10 @@ export async function unpublish({ id, config } = {}) {
   if (!id) throw new AdapterError("INVALID_INPUT", "unpublish requires id");
   await request(`/api/pages/${encodeURIComponent(id)}`, { method: "DELETE", config });
 }
+
+// Private, owner-only stats (uniqueViews, …). Reads the authenticated /meta endpoint — the
+// counter is never surfaced on the public share page, only to whoever holds the upload token.
+export async function stats({ id, config } = {}) {
+  if (!id) throw new AdapterError("INVALID_INPUT", "stats requires id");
+  return request(`/api/pages/${encodeURIComponent(id)}/meta`, { method: "GET", config });
+}

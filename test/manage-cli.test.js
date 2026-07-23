@@ -86,3 +86,32 @@ test("unpublish --yes calls adapter and removes manifest entry", async () => {
   assert.deepEqual(loadManifest(h.configDir).entries, []);
   assert.match(h.out(), /UNPUBLISHED: abc234/);
 });
+
+test("views prints the private uniqueViews from the adapter stats", async () => {
+  const h = harness();
+  seed(h.configDir, h.root);
+  const code = await run(["views", "abc234"], {
+    configDir: h.configDir,
+    config: { defaultTarget: "mock" },
+    adapters: { mock: { async stats({ id }) { assert.equal(id, "abc234"); return { uniqueViews: 3 }; } } },
+    stdout: h.stdout,
+    stderr: h.stderr
+  });
+  assert.equal(code, 0);
+  assert.match(h.out(), /VIEWS: 3 位访客/);
+  assert.match(h.out(), /https:\/\/mock\/s\/abc234\//);
+});
+
+test("views on a static target (no stats) explains why and exits 2", async () => {
+  const h = harness();
+  seed(h.configDir, h.root);
+  const code = await run(["views", "abc234"], {
+    configDir: h.configDir,
+    config: { defaultTarget: "mock" },
+    adapters: { mock: { /* static: no stats method */ } },
+    stdout: h.stdout,
+    stderr: h.stderr
+  });
+  assert.equal(code, 2);
+  assert.match(h.err(), /静态目标/);
+});

@@ -149,9 +149,12 @@ Managing existing shares:
 - `htmlshare list` — show every share (adds an `expires` column).
 - `htmlshare unpublish <file|id>` — delete a share (revocable for 7 days on server targets).
 - `htmlshare expire <file|id> <7d|2026-08-01|--off>` — change or clear a deadline (server targets; for static, republish with `--expires`).
+- `htmlshare views <file|id>` — show how many distinct visitors have opened the share. Private (server targets only: selfhost/cloud); the count is never shown on the shared page, only to whoever published it. Answers "did the other side actually open it?". Static targets have no backend and report nothing.
 - `htmlshare sweep` — delete all shares whose deadline has passed (mainly for static targets; server targets auto-expire).
 
-When the user says things like "把那个链接删掉" / "让这个 7 天后过期" / "清一下过期的", map them to `unpublish` / `--expires` (or `expire`) / `sweep` respectively.
+Reader-facing display (automatic, no flags): every published page shows an expiry badge with a live countdown and the exact deadline ("剩 3 天 · 2026-08-01 14:30 过期", amber under 24h), and — when an enhanced view exists — a labelled hint under the title so readers notice they can switch 原文/增强.
+
+When the user says things like "把那个链接删掉" / "让这个 7 天后过期" / "清一下过期的" / "对方打开了吗", map them to `unpublish` / `--expires` (or `expire`) / `sweep` / `views` respectively.
 
 ## Response Template
 

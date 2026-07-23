@@ -103,6 +103,7 @@ htmlshare config show
 - `htmlshare login`
 - `htmlshare publish ./note.md`
 - `htmlshare list`
+- `htmlshare views ./note.md`（有多少位访客打开过，仅服务端目标，私密）
 - `htmlshare unpublish ./note.md --yes`
 - `htmlshare config selfhost --base-url https://share.example.com --token <token>`
 - `htmlshare config defaults style minimal`

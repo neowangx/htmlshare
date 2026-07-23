@@ -46,12 +46,24 @@
 }
 
 * { box-sizing: border-box; }
+/* The [hidden] attribute must win over elements that set their own display (the expiry badge,
+   the TOC trigger). Author display:… beats the UA [hidden]{display:none}, so restate it !important
+   or those elements leak into view while nominally hidden. */
+[hidden] { display: none !important; }
 body { margin: 0; background: var(--hs-bg); color: var(--hs-ink); font: 16px/1.65 var(--hs-font-body); }
 main { width: min(960px, calc(100% - 32px)); margin: 40px auto; }
-.hs-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--hs-line); padding-bottom: 16px; margin-bottom: 24px; }
+.hs-topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-bottom: 1px solid var(--hs-line); padding-bottom: 16px; margin-bottom: 24px; }
+.hs-topbar-lead { display: flex; flex-direction: column; gap: 10px; min-width: 0; flex: 1 1 260px; }
+.hs-topbar-side { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; flex-shrink: 0; }
 h1 { font-size: 28px; line-height: 1.2; margin: 0; letter-spacing: 0; }
+.hs-view-hint { display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 5px 12px; border-radius: 999px; background: var(--hs-accent-soft); color: var(--hs-muted); font-size: 13px; line-height: 1.3; align-self: flex-start; max-width: 100%; }
+.hs-view-hint b { color: var(--hs-ink); font-weight: 600; }
+.hs-view-hint-arrow { color: var(--hs-accent); font-weight: 700; font-size: 15px; line-height: 1; }
+.hs-expiry { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; background: var(--hs-accent-soft); color: var(--hs-accent); font-size: 12.5px; font-weight: 600; line-height: 1.2; white-space: nowrap; }
+.hs-expiry[data-state="soon"] { background: var(--hs-warn-soft, rgba(217, 119, 6, .14)); color: var(--hs-warn, #B45309); }
+.hs-expiry[data-state="expired"] { background: var(--hs-danger-soft, rgba(220, 38, 38, .14)); color: var(--hs-danger, #B91C1C); }
 #hs-toggle { display: inline-flex; gap: 4px; border: 1px solid var(--hs-line); border-radius: var(--hs-radius-control); padding: 4px; background: var(--hs-panel); }
-#hs-toggle button { border: 0; border-radius: calc(var(--hs-radius-control) - 2px); padding: 6px 10px; background: transparent; color: var(--hs-muted); cursor: pointer; font: inherit; transition: background 120ms ease-out, color 120ms ease-out; }
+#hs-toggle button { border: 0; border-radius: calc(var(--hs-radius-control) - 2px); padding: 7px 16px; background: transparent; color: var(--hs-muted); cursor: pointer; font: inherit; font-weight: 600; transition: background 120ms ease-out, color 120ms ease-out; }
 #hs-toggle button[aria-pressed="true"] { background: var(--hs-accent); color: var(--hs-accent-ink); }
 .hs-panel { background: var(--hs-panel); border: 1px solid var(--hs-line); border-radius: var(--hs-radius-card); padding: 24px; box-shadow: var(--hs-shadow-card); }
 #hs-toc-trigger { position: fixed; z-index: 42; top: 50%; right: 0; display: inline-flex; width: 54px; min-height: 92px; padding: 12px 8px; border: 1px solid var(--hs-line); border-right: 0; border-radius: 16px 0 0 16px; background: var(--hs-panel); color: var(--hs-ink); box-shadow: var(--hs-shadow-float); cursor: pointer; font: inherit; flex-direction: column; align-items: center; justify-content: center; gap: 6px; transform: translateY(-50%); transition: opacity 160ms ease-out, transform 160ms ease-out, background 160ms ease-out; }
@@ -104,7 +116,7 @@ details > summary { cursor: pointer; }
   .hs-toc-head { padding-top: 14px; }
   #hs-toc a { min-height: 44px; padding-top: 11px; padding-bottom: 11px; font-size: 14px; }
 }
-@media print { #hs-toggle, #hs-toc-trigger, #hs-toc, #hs-toc-backdrop { display: none !important; } details { display: block; } }
+@media print { #hs-toggle, .hs-view-hint, #hs-toc-trigger, #hs-toc, #hs-toc-backdrop { display: none !important; } details { display: block; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
 
 
@@ -163,7 +175,7 @@ details > summary { cursor: pointer; }
 </head>
 <body data-hs-style="clinical">
 <main>
-<header class="hs-topbar"><h1>Q3 产品评审会议纪要</h1><div id="hs-toggle" role="group" aria-label="视图切换"><button type="button" data-view="faithful" aria-pressed="false">原文</button><button type="button" data-view="enhanced" aria-pressed="true">增强</button></div></header>
+<header class="hs-topbar"><div class="hs-topbar-lead"><h1>Q3 产品评审会议纪要</h1><p class="hs-view-hint"><b>两种阅读视图</b><span>原文 / 增强 · 点击右侧切换</span><span class="hs-view-hint-arrow" aria-hidden="true">→</span></p></div><div class="hs-topbar-side"><span id="hs-expiry" class="hs-expiry" data-hs-exp="" hidden><span class="hs-expiry-icon" aria-hidden="true">⏳</span><span class="hs-expiry-text"></span></span><div id="hs-toggle" role="group" aria-label="视图切换"><button type="button" data-view="faithful" aria-pressed="false">原文</button><button type="button" data-view="enhanced" aria-pressed="true">增强</button></div></div></header>
 <section id="hs-enhanced" class="hs-panel"><div class="hs-enhanced-content"><div class="hs-a2-col"><header class="hs-a2-hero"><p class="hs-a2-kicker">产品评审</p><h2 class="hs-a2-headline">Q3 产品评审会议纪要</h2><p class="hs-a2-herometa">2026-07-05 · 线上 · 小林 / Ada / 周宁 / 李想</p></header><div class="hs-a2-statgrid"><div class="hs-a2-stat"><span class="hs-a2-statval">8万</span><span class="hs-a2-statlabel">预算上限</span></div><div class="hs-a2-stat"><span class="hs-a2-statval">7/12</span><span class="hs-a2-statlabel">灰度截止</span></div><div class="hs-a2-stat"><span class="hs-a2-statval">2</span><span class="hs-a2-statlabel">覆盖团队</span></div></div><h3>决议</h3><ol class="hs-a2-list"><li>Q3 主推团队协作仪表盘，先覆盖销售和客服两个团队。</li><li>7 月 12 日前完成灰度名单，由 Ada 负责。</li><li>预算上限 8 万元，不新增外包。</li></ol><h3>行动项</h3><div class="hs-a2-tablewrap"><table><thead><tr><th>负责人</th><th>事项</th><th>截止</th></tr></thead><tbody><tr><td>Ada</td><td>整理灰度名单</td><td>2026-07-12</td></tr><tr><td>周宁</td><td>输出埋点清单</td><td>2026-07-10</td></tr><tr><td>李想</td><td>准备客户访谈问题</td><td>2026-07-09</td></tr><tr><td>小林</td><td>更新发布节奏表</td><td>2026-07-08</td></tr></tbody></table></div><h3>讨论记录</h3><ul class="hs-a2-timeline"><li class="hs-a2-tl-item"><span class="hs-a2-tl-title">指标口径</span><span class="hs-a2-tl-detail">销售看线索响应时长，客服看升级工单；第一版只做共用指标，不做复杂权限。</span></li><li class="hs-a2-tl-item"><span class="hs-a2-tl-title">埋点与灰度</span><span class="hs-a2-tl-detail">埋点缺口较大需先补事件上报；灰度团队不超过 20 人以控支持压力。</span></li><li class="hs-a2-tl-item"><span class="hs-a2-tl-title">客户访谈</span><span class="hs-a2-tl-detail">客户访谈放在灰度前一周完成，会议同意。</span></li></ul></div></div></section>
 <section id="hs-faithful" class="hs-panel" hidden><h1 id="q3-%E4%BA%A7%E5%93%81%E8%AF%84%E5%AE%A1%E4%BC%9A%E8%AE%AE%E7%BA%AA%E8%A6%81">Q3 产品评审会议纪要</h1>
 <p>时间：2026-07-05 10:00
@@ -200,6 +212,40 @@ details > summary { cursor: pointer; }
     for (const el of opened) el.open = false;
     opened = [];
   });
+})();
+
+(() => {
+  const el = document.querySelector("#hs-expiry");
+  if (!el) return;
+  const exp = Number(el.getAttribute("data-hs-exp"));
+  if (!exp) return;
+  const textEl = el.querySelector(".hs-expiry-text");
+  const at = new Date(exp);
+  const pad = (n) => String(n).padStart(2, "0");
+  const absText = at.getFullYear() + "-" + pad(at.getMonth() + 1) + "-" + pad(at.getDate()) + " " + pad(at.getHours()) + ":" + pad(at.getMinutes());
+  el.title = "将于 " + absText + " 过期";
+  function human(ms) {
+    const minutes = Math.floor(ms / 60000);
+    if (minutes < 60) return "剩 " + Math.max(1, minutes) + " 分钟";
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return "剩 " + hours + " 小时";
+    return "剩 " + Math.floor(hours / 24) + " 天";
+  }
+  function tick() {
+    const ms = exp - Date.now();
+    if (ms <= 0) {
+      el.dataset.state = "expired";
+      textEl.textContent = "已过期 · " + absText;
+      return false;
+    }
+    el.dataset.state = ms < 86400000 ? "soon" : "live";
+    textEl.textContent = human(ms) + " · " + absText + " 过期";
+    return true;
+  }
+  el.hidden = false;
+  if (tick()) {
+    const timer = setInterval(() => { if (!tick()) clearInterval(timer); }, 60000);
+  }
 })();
 
 (() => {

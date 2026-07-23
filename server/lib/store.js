@@ -144,6 +144,19 @@ export function setExpiry(dataDir, id, expiresAt) {
   return writeMeta(dataDir, existing);
 }
 
+// Bump the private unique-visitor tally. Uniqueness is decided by the caller (a per-page visitor
+// cookie); this only persists the increment and never touches version history, updatedAt, or
+// expiry. The count is exposed solely through the token-protected /meta endpoint, never on the
+// public page. The read-modify-write is atomic under Node's single thread (all sync fs calls);
+// it assumes one process owns dataDir — running the server clustered against a shared dir could
+// lose updates or clobber a concurrent write, which is out of scope for this single-box deploy.
+export function incrementUniqueViews(dataDir, id) {
+  const existing = getMeta(dataDir, id);
+  if (!existing || existing.deletedAt) return null;
+  existing.uniqueViews = (existing.uniqueViews || 0) + 1;
+  return writeMeta(dataDir, existing);
+}
+
 export function deletePage(dataDir, id, { now = new Date().toISOString() } = {}) {
   const existing = getMeta(dataDir, id);
   if (!existing || existing.deletedAt) return null;

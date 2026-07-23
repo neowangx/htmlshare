@@ -132,6 +132,13 @@ export async function unpublish({ id, config, fetchFn } = {}) {
   await request(`/api/pages/${encodeURIComponent(id)}`, { method: "DELETE", config, fetchFn });
 }
 
+// Private, owner-only stats (uniqueViews, …) via the authenticated /meta endpoint; the counter is
+// never exposed on the public share page.
+export async function stats({ id, config, fetchFn } = {}) {
+  if (!id) throw new AdapterError("INVALID_INPUT", "stats requires id");
+  return request(`/api/pages/${encodeURIComponent(id)}/meta`, { method: "GET", config, fetchFn });
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

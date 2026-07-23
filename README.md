@@ -95,6 +95,7 @@ Typical installed usage:
 - `htmlshare login`
 - `htmlshare publish ./note.md`
 - `htmlshare list`
+- `htmlshare views ./note.md` — how many distinct visitors opened a server-hosted share (private to you)
 - `htmlshare unpublish ./note.md --yes`
 - `htmlshare config selfhost --base-url https://share.example.com --token <token>`
 - `htmlshare config defaults style minimal`
@@ -160,6 +161,7 @@ curl -fsSL https://raw.githubusercontent.com/neowangx/htmlshare/main/install.sh 
 - `htmlshare login`：登录官方云（30 秒设备码）。
 - `htmlshare publish ./note.md`：发布，返回链接与访问码。
 - `htmlshare list`：列出已发布页面，含访问码。
+- `htmlshare views ./note.md`：查看有多少位访客打开过（仅服务端目标，私密，只有你能看到）。
 - `htmlshare unpublish ./note.md --yes`：撤回。
 - `htmlshare config selfhost --base-url <URL> --token <TOKEN>`：配置自托管目标。
 - `htmlshare config defaults style minimal`：设置默认风格。

@@ -7,12 +7,24 @@ const STYLES = new Set(listStyles());
 
 const STRUCTURE_CSS = `
 * { box-sizing: border-box; }
+/* The [hidden] attribute must win over elements that set their own display (the expiry badge,
+   the TOC trigger). Author display:… beats the UA [hidden]{display:none}, so restate it !important
+   or those elements leak into view while nominally hidden. */
+[hidden] { display: none !important; }
 body { margin: 0; background: var(--hs-bg); color: var(--hs-ink); font: 16px/1.65 var(--hs-font-body); }
 main { width: min(960px, calc(100% - 32px)); margin: 40px auto; }
-.hs-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--hs-line); padding-bottom: 16px; margin-bottom: 24px; }
+.hs-topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-bottom: 1px solid var(--hs-line); padding-bottom: 16px; margin-bottom: 24px; }
+.hs-topbar-lead { display: flex; flex-direction: column; gap: 10px; min-width: 0; flex: 1 1 260px; }
+.hs-topbar-side { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; flex-shrink: 0; }
 h1 { font-size: 28px; line-height: 1.2; margin: 0; letter-spacing: 0; }
+.hs-view-hint { display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 5px 12px; border-radius: 999px; background: var(--hs-accent-soft); color: var(--hs-muted); font-size: 13px; line-height: 1.3; align-self: flex-start; max-width: 100%; }
+.hs-view-hint b { color: var(--hs-ink); font-weight: 600; }
+.hs-view-hint-arrow { color: var(--hs-accent); font-weight: 700; font-size: 15px; line-height: 1; }
+.hs-expiry { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; background: var(--hs-accent-soft); color: var(--hs-accent); font-size: 12.5px; font-weight: 600; line-height: 1.2; white-space: nowrap; }
+.hs-expiry[data-state="soon"] { background: var(--hs-warn-soft, rgba(217, 119, 6, .14)); color: var(--hs-warn, #B45309); }
+.hs-expiry[data-state="expired"] { background: var(--hs-danger-soft, rgba(220, 38, 38, .14)); color: var(--hs-danger, #B91C1C); }
 #hs-toggle { display: inline-flex; gap: 4px; border: 1px solid var(--hs-line); border-radius: var(--hs-radius-control); padding: 4px; background: var(--hs-panel); }
-#hs-toggle button { border: 0; border-radius: calc(var(--hs-radius-control) - 2px); padding: 6px 10px; background: transparent; color: var(--hs-muted); cursor: pointer; font: inherit; transition: background 120ms ease-out, color 120ms ease-out; }
+#hs-toggle button { border: 0; border-radius: calc(var(--hs-radius-control) - 2px); padding: 7px 16px; background: transparent; color: var(--hs-muted); cursor: pointer; font: inherit; font-weight: 600; transition: background 120ms ease-out, color 120ms ease-out; }
 #hs-toggle button[aria-pressed="true"] { background: var(--hs-accent); color: var(--hs-accent-ink); }
 .hs-panel { background: var(--hs-panel); border: 1px solid var(--hs-line); border-radius: var(--hs-radius-card); padding: 24px; box-shadow: var(--hs-shadow-card); }
 #hs-toc-trigger { position: fixed; z-index: 42; top: 50%; right: 0; display: inline-flex; width: 54px; min-height: 92px; padding: 12px 8px; border: 1px solid var(--hs-line); border-right: 0; border-radius: 16px 0 0 16px; background: var(--hs-panel); color: var(--hs-ink); box-shadow: var(--hs-shadow-float); cursor: pointer; font: inherit; flex-direction: column; align-items: center; justify-content: center; gap: 6px; transform: translateY(-50%); transition: opacity 160ms ease-out, transform 160ms ease-out, background 160ms ease-out; }
@@ -65,7 +77,7 @@ details > summary { cursor: pointer; }
   .hs-toc-head { padding-top: 14px; }
   #hs-toc a { min-height: 44px; padding-top: 11px; padding-bottom: 11px; font-size: 14px; }
 }
-@media print { #hs-toggle, #hs-toc-trigger, #hs-toc, #hs-toc-backdrop { display: none !important; } details { display: block; } }
+@media print { #hs-toggle, .hs-view-hint, #hs-toc-trigger, #hs-toc, #hs-toc-backdrop { display: none !important; } details { display: block; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
 `;
 
@@ -82,6 +94,45 @@ const PRINT_JS = `
     for (const el of opened) el.open = false;
     opened = [];
   });
+})();
+`;
+
+// Live expiry countdown. Inert until injectExpiry() stamps a real timestamp into
+// #hs-expiry[data-hs-exp]; then it reveals the badge and refreshes the "剩 N 天 · <绝对时间>过期"
+// text once a minute. Works on any target (the deadline is baked into the page at publish time).
+const EXPIRY_JS = `
+(() => {
+  const el = document.querySelector("#hs-expiry");
+  if (!el) return;
+  const exp = Number(el.getAttribute("data-hs-exp"));
+  if (!exp) return;
+  const textEl = el.querySelector(".hs-expiry-text");
+  const at = new Date(exp);
+  const pad = (n) => String(n).padStart(2, "0");
+  const absText = at.getFullYear() + "-" + pad(at.getMonth() + 1) + "-" + pad(at.getDate()) + " " + pad(at.getHours()) + ":" + pad(at.getMinutes());
+  el.title = "将于 " + absText + " 过期";
+  function human(ms) {
+    const minutes = Math.floor(ms / 60000);
+    if (minutes < 60) return "剩 " + Math.max(1, minutes) + " 分钟";
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return "剩 " + hours + " 小时";
+    return "剩 " + Math.floor(hours / 24) + " 天";
+  }
+  function tick() {
+    const ms = exp - Date.now();
+    if (ms <= 0) {
+      el.dataset.state = "expired";
+      textEl.textContent = "已过期 · " + absText;
+      return false;
+    }
+    el.dataset.state = ms < 86400000 ? "soon" : "live";
+    textEl.textContent = human(ms) + " · " + absText + " 过期";
+    return true;
+  }
+  el.hidden = false;
+  if (tick()) {
+    const timer = setInterval(() => { if (!tick()) clearInterval(timer); }, 60000);
+  }
 })();
 `;
 
@@ -239,6 +290,25 @@ function renderToggle(hasEnhanced) {
   return `<div id="hs-toggle" role="group" aria-label="视图切换"><button type="button" data-view="faithful" aria-pressed="false">原文</button><button type="button" data-view="enhanced" aria-pressed="true">增强</button></div>`;
 }
 
+// The two-view affordance was easy to miss (a small unlabelled toggle in the corner). This hint
+// sits under the title, names both modes, and points at the toggle so first-time readers know the
+// enhanced view is one of two, not the only, rendering.
+const VIEW_HINT = `<p class="hs-view-hint"><b>两种阅读视图</b><span>原文 / 增强 · 点击右侧切换</span><span class="hs-view-hint-arrow" aria-hidden="true">→</span></p>`;
+
+// Always-present, inert-by-default expiry badge. injectExpiry() fills data-hs-exp at publish time;
+// EXPIRY_JS then reveals and animates it. Absent a deadline it stays hidden.
+const EXPIRY_BADGE = `<span id="hs-expiry" class="hs-expiry" data-hs-exp="" hidden><span class="hs-expiry-icon" aria-hidden="true">⏳</span><span class="hs-expiry-text"></span></span>`;
+
+// Publish-time: stamp the resolved absolute deadline into the composed page's expiry badge. Kept
+// out of composePage on purpose — the render cache key excludes expiry, so baking it in compose
+// would serve a stale countdown; instead the deadline is injected fresh on every publish.
+export function injectExpiry(html, expiresAt) {
+  if (!expiresAt) return html;
+  const ms = Date.parse(expiresAt);
+  if (Number.isNaN(ms)) return html;
+  return html.replace('data-hs-exp=""', `data-hs-exp="${ms}"`);
+}
+
 // Themes are the CSS-variable layer (styles/*): normalize any unknown/auto choice to clinical
 // so getStyle never throws on model- or user-supplied values.
 function normalizeStyle(style) {
@@ -269,7 +339,7 @@ export function composePage({ title, faithfulHtml, enhanced = null, footerBadge 
   const faithfulHidden = hasEnhanced ? " hidden" : "";
   const footerNote = codeProtected ? " · 轻量访问码保护" : "";
   const footer = footerBadge ? `<footer class="hs-footer">made with htmlshare${footerNote}</footer>` : "";
-  const script = `<script>${PRINT_JS}${hasEnhanced ? `${TOGGLE_JS}${TOC_JS}` : ""}</script>`;
+  const script = `<script>${PRINT_JS}${EXPIRY_JS}${hasEnhanced ? `${TOGGLE_JS}${TOC_JS}` : ""}</script>`;
 
   const html = `<!doctype html>
 <html lang="zh-CN">
@@ -282,7 +352,7 @@ export function composePage({ title, faithfulHtml, enhanced = null, footerBadge 
 </head>
 <body data-hs-style="${escapeHtml(pageStyle)}">
 <main>
-<header class="hs-topbar"><h1>${pageTitle}</h1>${renderToggle(hasEnhanced)}</header>
+<header class="hs-topbar"><div class="hs-topbar-lead"><h1>${pageTitle}</h1>${hasEnhanced ? VIEW_HINT : ""}</div><div class="hs-topbar-side">${EXPIRY_BADGE}${renderToggle(hasEnhanced)}</div></header>
 ${enhancedBlock}
 <section id="hs-faithful" class="hs-panel"${faithfulHidden}>${faithfulHtml || ""}</section>
 ${footer}

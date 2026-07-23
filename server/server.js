@@ -5,9 +5,26 @@ import { signSession, parseCookies, verifySession } from "./lib/cookie.js";
 import { verifyCode } from "./lib/code.js";
 import { expiredPage, gatePage } from "./lib/pages.js";
 import { createUnlockLimiter } from "./lib/ratelimit.js";
-import { createPage, deletePage, expireDue, getLatestHtml, getMeta, isExpired, purgeDeleted, setExpiry, updatePage } from "./lib/store.js";
+import { createPage, deletePage, expireDue, getLatestHtml, getMeta, incrementUniqueViews, isExpired, purgeDeleted, setExpiry, updatePage } from "./lib/store.js";
 
 const COOKIE_TTL_SECONDS = 86400;
+// Persistent per-page visitor marker; browsers cap durable cookies near 400 days.
+const VIEW_COOKIE_MAX_AGE = 400 * 24 * 60 * 60;
+
+// Count a page open once per browser: a first content serve (no hsv_<id> cookie yet) bumps the
+// unique-visitor tally and drops the marker cookie. Refreshes by the same browser don't re-count.
+// baseCookie lets the unlock path emit its session cookie alongside the marker (as an array).
+function viewHeaders(req, dataDir, id, cookieSecure, baseCookie = null) {
+  const cookies = parseCookies(req.headers.cookie);
+  const setCookies = [];
+  if (baseCookie) setCookies.push(baseCookie);
+  if (!cookies[`hsv_${id}`]) {
+    try { incrementUniqueViews(dataDir, id); } catch { /* analytics is best-effort, never blocks delivery */ }
+    setCookies.push(`hsv_${id}=1; Path=/s/${id}; Max-Age=${VIEW_COOKIE_MAX_AGE}; HttpOnly; SameSite=Strict${cookieSecure ? "; Secure" : ""}`);
+  }
+  if (!setCookies.length) return {};
+  return { "set-cookie": setCookies.length === 1 ? setCookies[0] : setCookies };
+}
 
 function json(res, status, body) {
   res.writeHead(status, { "content-type": "application/json; charset=utf-8", "x-content-type-options": "nosniff" });
@@ -172,7 +189,8 @@ export function createServer(options = {}) {
           createdAt: meta.createdAt,
           updatedAt: meta.updatedAt,
           expiresAt: meta.expiresAt || null,
-          hasCode: Boolean(meta.codeHash)
+          hasCode: Boolean(meta.codeHash),
+          uniqueViews: meta.uniqueViews || 0
         });
       }
 
@@ -182,9 +200,9 @@ export function createServer(options = {}) {
         const meta = getMeta(dataDir, id);
         if (!meta || meta.deletedAt) return html(res, 404, "<h1>404</h1>");
         if (isExpired(meta)) { deletePage(dataDir, id, { now: meta.expiresAt }); return html(res, 410, expiredPage()); }
-        if (!meta.codeHash) return html(res, 200, getLatestHtml(dataDir, id));
+        if (!meta.codeHash) return html(res, 200, getLatestHtml(dataDir, id), viewHeaders(req, dataDir, id, cookieSecure));
         const cookies = parseCookies(req.headers.cookie);
-        if (verifySession(secret, cookies[`hs_${id}`], id)) return html(res, 200, getLatestHtml(dataDir, id));
+        if (verifySession(secret, cookies[`hs_${id}`], id)) return html(res, 200, getLatestHtml(dataDir, id), viewHeaders(req, dataDir, id, cookieSecure));
         return html(res, 200, gatePage(id));
       }
 
@@ -205,7 +223,7 @@ export function createServer(options = {}) {
         limiter.reset(limitKey);
         const session = signSession(secret, { id, exp: Date.now() + COOKIE_TTL_SECONDS * 1000 });
         const cookie = `hs_${id}=${encodeURIComponent(session)}; Path=/s/${id}; HttpOnly; SameSite=Strict; Max-Age=${COOKIE_TTL_SECONDS}${cookieSecure ? "; Secure" : ""}`;
-        return html(res, 200, getLatestHtml(dataDir, id), { "set-cookie": cookie });
+        return html(res, 200, getLatestHtml(dataDir, id), viewHeaders(req, dataDir, id, cookieSecure, cookie));
       }
 
       return error(res, 404, "NOT_FOUND", "资源不存在");
