@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "no
 import { homedir } from "node:os";
 import { basename, dirname, extname, isAbsolute, join, resolve } from "node:path";
 
-import { composePage } from "../compose.js";
+import { composePage, injectExpiry } from "../compose.js";
 import { convertFile } from "../convert.js";
 import { MAX_LOCAL_ASSET_BYTES, assetDependenciesValid, embedLocalAssets } from "../assets.js";
 import { encryptHtml, generateStaticCode } from "../encrypt.js";
@@ -348,13 +348,15 @@ async function publishCommand(file, flags, deps) {
   // Always echo the resolved deadline so a publish never goes out without confirming it.
   stderr.write(`EXPIRES: ${describeExpiry(expiresAt)}\n`);
 
+  // Bake the resolved deadline into the page's expiry badge (all targets) so a reader always sees
+  // when it expires; harmless no-op for direct-HTML pages, which carry no badge.
+  let uploadHtml = expiresAt ? injectExpiry(html, expiresAt) : html;
   // D4 static track: no server gate, so encrypt the page itself with the access code. Expiry on
   // static has no server to enforce it, so bake in a client-side guard as an honest backstop
   // (bypassable — real reaping is `htmlshare sweep`); wrap it outermost so it runs first.
-  let uploadHtml = html;
   let encrypted = false;
   if (gate === "static" && code) {
-    uploadHtml = encryptHtml(html, code).html;
+    uploadHtml = encryptHtml(uploadHtml, code).html;
     encrypted = true;
   }
   if (gate === "static" && expiresAt) {
@@ -433,7 +435,7 @@ export async function run(argv = process.argv.slice(2), deps = {}) {
   const stderr = deps.stderr || process.stderr;
   const parsed = parseArgs(argv);
   if (parsed.command === "--help" || parsed.command === "-h" || !parsed.command) {
-    stdout.write("htmlshare\n\nUsage:\n  htmlshare publish <file> [--target T] [--code C | --public] [--expires 7d | --no-expires] [--enhanced a2ui.json] [--style S] [--title T] [--force]\n  htmlshare login <邀请码> | login [--base-url URL]\n  htmlshare list [--json]\n  htmlshare unpublish <file|id> [--yes]\n  htmlshare expire <file|id> <7d|24h|2026-08-01|--off>\n  htmlshare sweep [--yes]\n  htmlshare config [show|target|selfhost|defaults]\n\nFlags:\n  --target selfhost|cloud|vercel|cloudflare  发布目标（缺省自动探测）\n  --code C | --public                        自定义访问码 / 关闭门禁\n  --expires 7d | --no-expires                过期时间（缺省会询问；到期后不可访问）\n  --enhanced a2ui.json                       A2UI 组件树增强内容（缺省仅忠实版）\n  --style auto|clinical|minimal|editorial|darktech  主题（也可由 A2UI 文档内 theme 指定）\n  --title T                                  覆盖标题\n  --force                                    跳过转换缓存，强制重渲染\n");
+    stdout.write("htmlshare\n\nUsage:\n  htmlshare publish <file> [--target T] [--code C | --public] [--expires 7d | --no-expires] [--enhanced a2ui.json] [--style S] [--title T] [--force]\n  htmlshare login <邀请码> | login [--base-url URL]\n  htmlshare list [--json]\n  htmlshare unpublish <file|id> [--yes]\n  htmlshare expire <file|id> <7d|24h|2026-08-01|--off>\n  htmlshare views <file|id>\n  htmlshare sweep [--yes]\n  htmlshare config [show|target|selfhost|defaults]\n\nFlags:\n  --target selfhost|cloud|vercel|cloudflare  发布目标（缺省自动探测）\n  --code C | --public                        自定义访问码 / 关闭门禁\n  --expires 7d | --no-expires                过期时间（缺省会询问；到期后不可访问）\n  --enhanced a2ui.json                       A2UI 组件树增强内容（缺省仅忠实版）\n  --style auto|clinical|minimal|editorial|darktech  主题（也可由 A2UI 文档内 theme 指定）\n  --title T                                  覆盖标题\n  --force                                    跳过转换缓存，强制重渲染\n");
     return 0;
   }
   if (parsed.command === "--version" || parsed.command === "-v") {
@@ -559,6 +561,41 @@ export async function run(argv = process.argv.slice(2), deps = {}) {
     } catch (error) {
       if (error instanceof AdapterError) {
         stderr.write(`EXPIRE: ${error.code} ${error.message}\n`);
+        return 4;
+      }
+      throw error;
+    }
+  }
+
+  if (parsed.command === "views" && parsed.file) {
+    const manifest = loadManifest(deps.configDir);
+    const config = deps.config || loadConfig(deps.configDir);
+    const target = parsed.flags.target || config.defaultTarget;
+    const maybePath = isAbsolute(parsed.file) ? parsed.file : resolve(deps.cwd || process.cwd(), parsed.file);
+    const entry = manifest.entries.find((item) => item.id === parsed.file)
+      || manifest.entries.find((item) => item.source === maybePath && (!target || item.target === target));
+    if (!entry) {
+      stderr.write("VIEWS: entry not found\n");
+      return 2;
+    }
+    const adapter = deps.adapters?.[entry.target] || getAdapter(entry.target);
+    // Only server targets can count opens; static hosts (vercel/cloudflare) have no backend.
+    if (typeof adapter.stats !== "function") {
+      stderr.write(`VIEWS: ${entry.target} 是静态目标，无法统计浏览（需服务端）。\n`);
+      return 2;
+    }
+    try {
+      const info = await adapter.stats({ id: entry.id, config });
+      stdout.write(`VIEWS: ${info.uniqueViews ?? 0} 位访客打开过\n`);
+      stdout.write(`URL: ${entry.url}\n`);
+      return 0;
+    } catch (error) {
+      if (error instanceof AdapterError) {
+        if (error.code === "EXPIRED") {
+          stderr.write("VIEWS: 分享已过期，服务端已不再提供统计\n");
+          return 4;
+        }
+        stderr.write(`VIEWS: ${error.code} ${error.message}\n`);
         return 4;
       }
       throw error;

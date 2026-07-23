@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { composePage, validateA2UI } from "../src/compose.js";
+import { composePage, injectExpiry, validateA2UI } from "../src/compose.js";
 import { convertFaithful } from "../src/convert.js";
 
 const source = `# 产品评审会纪要
@@ -85,6 +85,33 @@ test("data binding resolves $path against the dataModel", () => {
   const { html } = composePage({ title: "t", faithfulHtml: "<p>x</p>", enhanced: validDoc() });
   assert.match(html, /92%/);
   assert.match(html, /hs-a2-hero/);
+});
+
+test("dual page ships a labelled view hint and an inert expiry badge in the single script", () => {
+  const { html } = composePage({ title: "t", faithfulHtml: "<p>x</p>", enhanced: validDoc() });
+  assert.match(html, /class="hs-view-hint"/);
+  assert.match(html, /两种阅读视图/);
+  assert.match(html, /id="hs-expiry" class="hs-expiry" data-hs-exp="" hidden/);
+  const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
+  assert.equal(scripts.length, 1);
+  assert.match(scripts[0][1], /data-hs-exp/);
+  assert.doesNotThrow(() => new Function(scripts[0][1]));
+  assert.doesNotMatch(html, /https?:\/\//);
+});
+
+test("faithful-only page carries the expiry badge but no view hint", () => {
+  const { html } = composePage({ title: "t", faithfulHtml: "<p>x</p>" });
+  assert.match(html, /id="hs-expiry"/);
+  assert.doesNotMatch(html, /class="hs-view-hint"/);
+});
+
+test("injectExpiry stamps the absolute deadline and is inert without one", () => {
+  const { html } = composePage({ title: "t", faithfulHtml: "<p>x</p>" });
+  const iso = "2026-08-01T00:00:00.000Z";
+  assert.match(injectExpiry(html, iso), new RegExp(`data-hs-exp="${Date.parse(iso)}"`));
+  assert.equal(injectExpiry(html, null), html);
+  const raw = "<!doctype html><html><body><h1>Raw</h1></body></html>";
+  assert.equal(injectExpiry(raw, iso), raw); // no badge to stamp
 });
 
 test("composePage without enhanced input renders faithful-only page without toggle", () => {

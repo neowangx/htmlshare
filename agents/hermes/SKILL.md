@@ -121,7 +121,7 @@ If upload fails, report the failure and mention that the rendered artifact is ca
 
 If a referenced local file is missing, unreadable, unsafe as an image (for example active SVG), or the local-resource total exceeds the collector limit, publishing stops before upload. Fix/remove the broken reference and retry; never claim a page was shared while keeping a known broken local link.
 
-If no target is configured, follow the CLI guidance. If the user has a VPS or server, help them configure `selfhost` first with `htmlshare config selfhost --base-url <url> --token <token>`. If they do not have a VPS or want to skip host setup, help them use Cloudflare Pages (`npx wrangler login`) or another available static target.
+If no target is configured, first check whether someone has given the user an `hsi_` invite code — if so, that is the intended target: enroll with `htmlshare login <hsi_...>` (see **Cloud Invite** above) and publish there. Otherwise follow the CLI guidance: if the user has a VPS or server, help them configure `selfhost` first with `htmlshare config selfhost --base-url <url> --token <token>`; if they do not have a VPS or want to skip host setup, help them use Cloudflare Pages (`npx wrangler login`) or another available static target.
 
 ## Response Template
 
